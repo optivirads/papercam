@@ -35,9 +35,9 @@ export const SideDrawer: React.FC<SideDrawerProps> = ({
   onClose,
   activeTab,
   onSelectTab,
-  studentName = 'K. S. Madhavan',
+  studentName = 'PSC Aspirant',
   studentRole = 'PSC Aspirant',
-  avatarUrl = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+  avatarUrl = '',
   userRole = 'student',
   onLogout
 }) => {
@@ -119,19 +119,17 @@ export const SideDrawer: React.FC<SideDrawerProps> = ({
               </div>
             </div>
           ) : (
-            <div className="flex items-center gap-4 mt-2 mb-8 pr-6">
-              <img
-                src={avatarUrl}
-                alt={studentName}
-                className="w-14 h-14 rounded-full object-cover border-2 border-[#ffc000]/40 shadow-md"
-              />
+                      <div className="flex items-center gap-4 mt-2 mb-8 pr-6">
+              {avatarUrl ? (
+                <img src={avatarUrl} alt={studentName} className="w-14 h-14 rounded-full object-cover border-2 border-[#ffc000]/40 shadow-md" />
+              ) : (
+                <div className="w-14 h-14 rounded-full bg-[#ffc000]/10 border-2 border-[#ffc000]/30 flex items-center justify-center">
+                  <span className="text-[#ffc000] font-black text-xl">{studentName.charAt(0).toUpperCase()}</span>
+                </div>
+              )}
               <div className="flex flex-col">
-                <h2 className="text-xl font-bold text-[#ffc000] leading-snug tracking-tight">
-                  {studentName}
-                </h2>
-                <span className="text-xs font-medium text-slate-400">
-                  {studentRole}
-                </span>
+                <h2 className="text-xl font-bold text-[#ffc000] leading-snug tracking-tight">{studentName}</h2>
+                <span className="text-xs font-medium text-slate-400">{studentRole}</span>
               </div>
             </div>
           )}

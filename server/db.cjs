@@ -117,6 +117,18 @@ class CloudDatabase {
     return result;
   }
 
+  getProfile(key) {
+    return this.data.profiles ? this.data.profiles[key] || null : null;
+  }
+
+  saveProfile(profile) {
+    if (!this.data.profiles) this.data.profiles = {};
+    const key = profile.mobileNumber || profile.email || 'default';
+    this.data.profiles[key] = profile;
+    this.saveData();
+    return profile;
+  }
+
   getLeaderboard() {
     return [
       { rank: 1, name: 'Anjali Nair', avgScore: 98.5, percentile: '99%' },

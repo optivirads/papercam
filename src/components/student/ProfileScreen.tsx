@@ -47,12 +47,12 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
 
   // Edit Profile form state
   const [profileForm, setProfileForm] = useState<StudentProfileForm>({
-    fullName: studentProfile?.fullName || 'K. S. Madhavan',
-    email: studentProfile?.email || 'madhavan.ks@example.com',
-    mobileNumber: studentProfile?.mobileNumber || '9876543210',
+    fullName: studentProfile?.fullName || '',
+    email: studentProfile?.email || '',
+    mobileNumber: studentProfile?.mobileNumber || '',
     qualification: studentProfile?.qualification || 'Graduate',
-    profilePicUrl: studentProfile?.profilePicUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80',
-    targetExams: studentProfile?.targetExams || ['LDC 2024 Batch', '10th Prelims VFA']
+    profilePicUrl: studentProfile?.profilePicUrl || '',
+    targetExams: studentProfile?.targetExams || []
   });
 
   // Change Password form state

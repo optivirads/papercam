@@ -12,17 +12,15 @@ export const OnboardingProfileScreen: React.FC<OnboardingProfileScreenProps> = (
   onSaveProfile
 }) => {
   const [formData, setFormData] = useState<StudentProfileForm>({
-    fullName: 'K. S. Madhavan',
-    email: 'madhavan.ks@example.com',
-    mobileNumber: initialMobile || '9876543210',
+    fullName: '',
+    email: '',
+    mobileNumber: initialMobile || '',
     qualification: 'Graduate',
-    profilePicUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-    targetExams: ['LDC 2024 Batch', '10th Prelims VFA']
+    profilePicUrl: '',
+    targetExams: []
   });
 
-  const [avatarPreview, setAvatarPreview] = useState<string>(
-    formData.profilePicUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'
-  );
+  const [avatarPreview, setAvatarPreview] = useState<string>('');
 
   const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
 
@@ -79,12 +77,14 @@ export const OnboardingProfileScreen: React.FC<OnboardingProfileScreenProps> = (
         
         {/* OPTIONAL: Profile Picture Upload Header */}
         <div className="rounded-3xl bg-[#141c2e] border border-slate-800 p-5 space-y-3 shadow-xl text-center">
-          <div className="relative w-20 h-20 mx-auto">
-            <img
-              src={avatarPreview}
-              alt="Profile Avatar"
-              className="w-20 h-20 rounded-full object-cover border-2 border-[#ffc000] shadow-md"
-            />
+                  <div className="relative w-20 h-20 mx-auto">
+            {avatarPreview ? (
+              <img src={avatarPreview} alt="Profile Avatar" className="w-20 h-20 rounded-full object-cover border-2 border-[#ffc000] shadow-md" />
+            ) : (
+              <div className="w-20 h-20 rounded-full bg-[#ffc000]/10 border-2 border-[#ffc000]/40 flex items-center justify-center">
+                <span className="text-[#ffc000] font-black text-2xl">{formData.fullName ? formData.fullName.charAt(0).toUpperCase() : '?'}</span>
+              </div>
+            )}
             <label className="absolute bottom-0 right-0 w-7 h-7 bg-[#ffc000] text-[#0d1322] rounded-full flex items-center justify-center cursor-pointer shadow-lg hover:scale-105 transition-transform">
               <Upload className="w-4 h-4" />
               <input type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
@@ -115,7 +115,7 @@ export const OnboardingProfileScreen: React.FC<OnboardingProfileScreenProps> = (
                 required
                 value={formData.fullName}
                 onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                placeholder="e.g. K. S. Madhavan"
+                placeholder="e.g. Arjun Nair"
                 className="w-full bg-[#0d1322] border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#ffc000]"
               />
             </div>
@@ -153,7 +153,7 @@ export const OnboardingProfileScreen: React.FC<OnboardingProfileScreenProps> = (
                 required
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                placeholder="madhavan@example.com"
+                placeholder="you@gmail.com"
                 className="w-full bg-[#0d1322] border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#ffc000]"
               />
             </div>

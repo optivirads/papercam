@@ -1,245 +1,380 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, ShieldCheck, CheckCircle2, ArrowLeft, AlertCircle } from 'lucide-react';
+import { ArrowRight, ShieldCheck, CheckCircle2, ArrowLeft, AlertCircle, Mail } from 'lucide-react';
 import { AuthService, type AuthUserSession } from '../../services/authService';
 
 interface AuthScreenProps {
   onLoginSuccess: (session: AuthUserSession) => void;
 }
 
-// ─── Inline validation helpers ───────────────────────────────────────────────
-function validateEmail(email: string): string {
-  if (!email.trim()) return 'Email address is required.';
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return 'Please enter a valid email address.';
+type LoginMethod = 'mobile' | 'email' | 'google';
+
+const API = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
+// ─── Validation helpers ───────────────────────────────────────────────────────
+function validatePhone(v: string) {
+  if (!v) return 'Mobile number is required.';
+  if (v.length !== 10) return 'Enter a valid 10-digit mobile number.';
+  if (!/^[6-9]\d{9}$/.test(v)) return 'Number must start with 6, 7, 8 or 9.';
   return '';
 }
 
-function validatePhone(phone: string): string {
-  if (!phone) return 'Mobile number is required.';
-  if (phone.length !== 10) return 'Enter a valid 10-digit mobile number.';
-  if (!/^[6-9]\d{9}$/.test(phone)) return 'Number must start with 6, 7, 8, or 9.';
+function validateEmail(v: string) {
+  if (!v.trim()) return 'Email address is required.';
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return 'Please enter a valid email address.';
   return '';
 }
 
-function validateOtp(otp: string): string {
-  if (!otp) return 'OTP is required.';
-  if (otp.length < 4) return 'Enter at least 4 digits.';
+function validateOtp(v: string) {
+  if (!v) return 'OTP is required.';
+  if (v.length < 4) return 'Enter at least 4 digits.';
   return '';
 }
 
-// ─── Small inline error component ─────────────────────────────────────────────
-function FieldError({ msg }: { msg: string }) {
-  if (!msg) return null;
-  return (
+// ─── Small inline error component ────────────────────────────────────────────
+const FieldError = ({ msg }: { msg: string }) =>
+  msg ? (
     <div className="flex items-center gap-1.5 text-[11px] font-bold text-rose-400 mt-1.5">
       <AlertCircle className="w-3 h-3 shrink-0" />
       {msg}
     </div>
-  );
-}
+  ) : null;
+
+// ─── OTP Input Box ────────────────────────────────────────────────────────────
+const OtpInput = ({
+  value,
+  onChange,
+  error,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  error: string;
+}) => (
+  <div className="space-y-1 text-center">
+    <input
+      type="text"
+      inputMode="numeric"
+      maxLength={6}
+      value={value}
+      onChange={(e) => onChange(e.target.value.replace(/\D/g, ''))}
+      placeholder="• • • • • •"
+      autoFocus
+      className={`w-44 mx-auto block bg-[#0d1322] border-2 rounded-xl py-3 text-center text-2xl font-black tracking-[0.4em] text-white focus:outline-none shadow-inner transition-colors ${
+        error ? 'border-rose-500' : 'border-[#ffc000]'
+      }`}
+    />
+    <FieldError msg={error} />
+  </div>
+);
 
 export const AuthScreen: React.FC<AuthScreenProps> = ({ onLoginSuccess }) => {
   const navigate = useNavigate();
-  const [loginMethod, setLoginMethod] = useState<'mobile' | 'google'>('mobile');
+  const [method, setMethod] = useState<LoginMethod>('mobile');
 
-  // Mobile OTP state
-  const [mobileNumber, setMobileNumber] = useState('');
-  const [mobileError, setMobileError] = useState('');
-  const [otpStep, setOtpStep] = useState(false);
-  const [otpCode, setOtpCode] = useState('');
-  const [otpError, setOtpError] = useState('');
-  const [otpHint, setOtpHint] = useState('');          // shows dev OTP code from backend
+  // ── Mobile OTP state ──────────────────────────────────────────────────────
+  const [phone, setPhone] = useState('');
+  const [phoneErr, setPhoneErr] = useState('');
+  const [phoneOtpStep, setPhoneOtpStep] = useState(false);
+  const [phoneOtp, setPhoneOtp] = useState('');
+  const [phoneOtpErr, setPhoneOtpErr] = useState('');
 
-  // Google state
+  // ── Email OTP state ───────────────────────────────────────────────────────
+  const [email, setEmail] = useState('');
+  const [emailErr, setEmailErr] = useState('');
+  const [emailOtpStep, setEmailOtpStep] = useState(false);
+  const [emailOtp, setEmailOtp] = useState('');
+  const [emailOtpErr, setEmailOtpErr] = useState('');
+
+  // ── Google state ──────────────────────────────────────────────────────────
   const [googleEmail, setGoogleEmail] = useState('');
-  const [googleError, setGoogleError] = useState('');
+  const [googleEmailErr, setGoogleEmailErr] = useState('');
 
+  // ── Shared state ──────────────────────────────────────────────────────────
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [serverError, setServerError] = useState('');
+  const [devHint, setDevHint] = useState('');
 
-  // ── Helpers ────────────────────────────────────────────────────────────────
-  const clearErrors = () => {
-    setMobileError('');
-    setOtpError('');
-    setGoogleError('');
-    setServerError('');
-    setOtpHint('');
+  const clearAll = () => {
+    setPhoneErr(''); setPhoneOtpErr('');
+    setEmailErr(''); setEmailOtpErr('');
+    setGoogleEmailErr(''); setServerError(''); setDevHint('');
   };
 
-  const switchMethod = (m: 'mobile' | 'google') => {
-    setLoginMethod(m);
-    setOtpStep(false);
-    clearErrors();
+  const switchMethod = (m: LoginMethod) => {
+    setMethod(m);
+    setPhoneOtpStep(false);
+    setEmailOtpStep(false);
+    setPhoneOtp(''); setEmailOtp('');
+    clearAll();
   };
 
-  // ── Send OTP ───────────────────────────────────────────────────────────────
-  const handleSendOtp = async (e: React.FormEvent) => {
+  // ── Finish login ──────────────────────────────────────────────────────────
+  const finish = (session: AuthUserSession) => onLoginSuccess(session);
+
+  // ── PHONE: Send OTP ───────────────────────────────────────────────────────
+  const handleSendPhoneOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    const err = validatePhone(mobileNumber);
-    if (err) { setMobileError(err); return; }
-    clearErrors();
-    setIsSubmitting(true);
-
+    const err = validatePhone(phone);
+    if (err) { setPhoneErr(err); return; }
+    clearAll(); setIsSubmitting(true);
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/auth/send-otp`,
-        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone: mobileNumber }) }
-      );
+      const res = await fetch(`${API}/auth/send-otp`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone }),
+      });
       const data = await res.json();
       if (data.success) {
-        setOtpStep(true);
-        // Show dev OTP hint if backend returns it
-        if (data._devOtp) setOtpHint(`Dev OTP: ${data._devOtp}`);
+        setPhoneOtpStep(true);
+        if (data._devOtp) setDevHint(`Dev OTP: ${data._devOtp}`);
       } else {
-        setServerError(data.error || 'Failed to send OTP. Please try again.');
+        setServerError(data.error || 'Failed to send OTP.');
       }
     } catch {
-      // Backend offline — allow offline flow
-      setOtpStep(true);
-      setOtpHint('Offline mode: enter any 4+ digit code.');
-    } finally {
-      setIsSubmitting(false);
-    }
+      setPhoneOtpStep(true);
+      setDevHint('Offline mode: enter any 4+ digit code.');
+    } finally { setIsSubmitting(false); }
   };
 
-  // ── Verify OTP ─────────────────────────────────────────────────────────────
-  const handleVerifyOtp = async (e: React.FormEvent) => {
+  // ── PHONE: Verify OTP ─────────────────────────────────────────────────────
+  const handleVerifyPhoneOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    const err = validateOtp(otpCode);
-    if (err) { setOtpError(err); return; }
-    clearErrors();
-    setIsSubmitting(true);
-
+    const err = validateOtp(phoneOtp);
+    if (err) { setPhoneOtpErr(err); return; }
+    clearAll(); setIsSubmitting(true);
     try {
       let verified = false;
       try {
-        const res = await fetch(
-          `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/auth/verify-otp`,
-          { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone: mobileNumber, otp: otpCode }) }
-        );
+        const res = await fetch(`${API}/auth/verify-otp`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone, otp: phoneOtp }),
+        });
         const data = await res.json();
-        verified = data.success === true;
-        if (!verified) {
-          setOtpError(data.error || 'Incorrect OTP. Please try again.');
-        }
+        verified = data.success;
+        if (!verified) setPhoneOtpErr(data.error || 'Incorrect OTP.');
       } catch {
-        // Backend offline — accept any 4+ digit code
-        verified = otpCode.length >= 4;
+        verified = phoneOtp.length >= 4; // offline fallback
       }
-
       if (verified) {
-        const session = await AuthService.signInWithPhoneOtp(mobileNumber, otpCode);
-        onLoginSuccess(session);
+        const session = await AuthService.signInWithPhoneOtp(phone, phoneOtp);
+        finish(session);
       }
-    } catch {
-      setServerError('Something went wrong. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
+    } catch { setServerError('Something went wrong. Please try again.'); }
+    finally { setIsSubmitting(false); }
   };
 
-  // ── Google Login ───────────────────────────────────────────────────────────
+  // ── EMAIL: Send OTP ───────────────────────────────────────────────────────
+  const handleSendEmailOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const err = validateEmail(email);
+    if (err) { setEmailErr(err); return; }
+    clearAll(); setIsSubmitting(true);
+    try {
+      const res = await fetch(`${API}/auth/send-email-otp`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setEmailOtpStep(true);
+        if (data._devOtp) setDevHint(`Dev OTP: ${data._devOtp}`);
+        else setDevHint('Check your email inbox for the OTP code.');
+      } else {
+        setServerError(data.error || 'Failed to send OTP email.');
+      }
+    } catch {
+      setEmailOtpStep(true);
+      setDevHint('Offline mode: enter any 4+ digit code.');
+    } finally { setIsSubmitting(false); }
+  };
+
+  // ── EMAIL: Verify OTP ─────────────────────────────────────────────────────
+  const handleVerifyEmailOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const err = validateOtp(emailOtp);
+    if (err) { setEmailOtpErr(err); return; }
+    clearAll(); setIsSubmitting(true);
+    try {
+      let role: 'student' | 'admin' = 'student';
+      try {
+        const res = await fetch(`${API}/auth/verify-email-otp`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, otp: emailOtp }),
+        });
+        const data = await res.json();
+        if (!data.success) { setEmailOtpErr(data.error || 'Incorrect OTP.'); setIsSubmitting(false); return; }
+        role = data.role || 'student';
+      } catch {
+        if (emailOtp.length < 4) { setEmailOtpErr('Incorrect OTP.'); setIsSubmitting(false); return; }
+      }
+      const session = await AuthService.signInWithGoogle(email.trim().toLowerCase(),
+        email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()));
+      finish(session);
+    } catch { setServerError('Something went wrong. Please try again.'); }
+    finally { setIsSubmitting(false); }
+  };
+
+  // ── GOOGLE: Sign In ───────────────────────────────────────────────────────
   const handleGoogleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     const err = validateEmail(googleEmail);
-    if (err) { setGoogleError(err); return; }
-    clearErrors();
-    setIsSubmitting(true);
-
+    if (err) { setGoogleEmailErr(err); return; }
+    clearAll(); setIsSubmitting(true);
     try {
-      const namePart = googleEmail.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
-      const session = await AuthService.signInWithGoogle(googleEmail.trim().toLowerCase(), namePart);
-      onLoginSuccess(session);
-    } catch {
-      setServerError('Google sign-in failed. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
+      const name = googleEmail.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+      const session = await AuthService.signInWithGoogle(googleEmail.trim().toLowerCase(), name);
+      finish(session);
+    } catch { setServerError('Google sign-in failed. Please try again.'); }
+    finally { setIsSubmitting(false); }
   };
 
-  // ── Render ─────────────────────────────────────────────────────────────────
+  // ─── Render ───────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-[#0b0f19] flex flex-col items-center justify-center px-5 py-12">
       <div className="w-full max-w-md space-y-6">
 
-        {/* Back to Landing */}
-        <button
-          onClick={() => navigate('/')}
-          className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-sm font-semibold cursor-pointer"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to Home
+        {/* Back link */}
+        <button onClick={() => navigate('/')} className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-sm font-semibold cursor-pointer">
+          <ArrowLeft className="w-4 h-4" /> Back to Home
         </button>
 
-        {/* Brand Header */}
+        {/* Brand header */}
         <div className="text-center space-y-3">
           <div className="w-16 h-16 rounded-3xl bg-gradient-to-tr from-[#ffc000] to-amber-500 flex items-center justify-center text-[#0d1322] font-black text-2xl mx-auto shadow-xl shadow-[#ffc000]/20">P</div>
-          <h1 className="text-3xl font-black text-white tracking-tight">
-            PSC Master <span className="text-[#ffc000]">Portal</span>
-          </h1>
-          <p className="text-xs font-semibold text-slate-400 max-w-xs mx-auto">
-            Kerala's #1 exam prep platform for LDC, VFA, SI &amp; KAS.
-          </p>
+          <h1 className="text-3xl font-black text-white tracking-tight">PSC Master <span className="text-[#ffc000]">Portal</span></h1>
+          <p className="text-xs font-semibold text-slate-400 max-w-xs mx-auto">Kerala's #1 exam prep platform for LDC, VFA, SI &amp; KAS.</p>
         </div>
 
-        {/* Auth Card */}
+        {/* Auth card */}
         <div className="rounded-3xl bg-[#141c2e] border border-slate-800 p-6 space-y-5 shadow-2xl">
 
-          {/* Method Toggle */}
-          <div className="grid grid-cols-2 gap-1.5 p-1 bg-[#0d1322] rounded-2xl border border-slate-800 text-xs font-extrabold">
-            <button
-              type="button"
-              onClick={() => switchMethod('mobile')}
-              className={`py-2.5 rounded-xl transition-all cursor-pointer ${loginMethod === 'mobile' ? 'bg-[#ffc000] text-[#0d1322] shadow-md' : 'text-slate-400 hover:text-white'}`}
-            >
-              📱 Mobile OTP
-            </button>
-            <button
-              type="button"
-              onClick={() => switchMethod('google')}
-              className={`py-2.5 rounded-xl transition-all cursor-pointer ${loginMethod === 'google' ? 'bg-[#ffc000] text-[#0d1322] shadow-md' : 'text-slate-400 hover:text-white'}`}
-            >
-              🌐 Google Auth
-            </button>
+          {/* Method toggle — 3 tabs */}
+          <div className="grid grid-cols-3 gap-1 p-1 bg-[#0d1322] rounded-2xl border border-slate-800 text-[11px] font-extrabold">
+            {(['mobile', 'email', 'google'] as LoginMethod[]).map((m) => (
+              <button key={m} type="button" onClick={() => switchMethod(m)}
+                className={`py-2.5 rounded-xl transition-all cursor-pointer capitalize ${method === m ? 'bg-[#ffc000] text-[#0d1322] shadow-md' : 'text-slate-400 hover:text-white'}`}
+              >
+                {m === 'mobile' ? '📱 Mobile' : m === 'email' ? '📧 Email' : '🌐 Google'}
+              </button>
+            ))}
           </div>
 
-          {/* Server-level error */}
+          {/* Server error */}
           {serverError && (
             <div className="flex items-center gap-2 text-xs font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-xl px-3 py-2.5">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              {serverError}
+              <AlertCircle className="w-4 h-4 shrink-0" />{serverError}
             </div>
           )}
 
-          {/* ── GOOGLE LOGIN ── */}
-          {loginMethod === 'google' && (
-            <form onSubmit={handleGoogleLogin} className="space-y-4 pt-1 animate-fade-in" noValidate>
-              <div className="space-y-1">
-                <label className="block text-xs font-bold text-slate-300">
-                  Google Account Email <span className="text-rose-400">*</span>
-                </label>
-                <input
-                  type="email"
-                  value={googleEmail}
-                  onChange={(e) => { setGoogleEmail(e.target.value); setGoogleError(''); }}
-                  onBlur={() => setGoogleError(validateEmail(googleEmail))}
-                  placeholder="you@gmail.com"
-                  className={`w-full bg-[#0d1322] border rounded-xl px-4 py-3 text-sm font-medium text-white placeholder-slate-500 focus:outline-none transition-colors ${
-                    googleError ? 'border-rose-500 focus:border-rose-400' : 'border-slate-700 focus:border-[#ffc000]'
-                  }`}
-                />
-                <FieldError msg={googleError} />
+          {/* Dev hint */}
+          {devHint && (
+            <div className="text-[11px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-xl px-3 py-2.5 text-center">
+              🛠 {devHint}
+            </div>
+          )}
+
+          {/* ── MOBILE OTP — Step 1 ── */}
+          {method === 'mobile' && !phoneOtpStep && (
+            <form onSubmit={handleSendPhoneOtp} className="space-y-4 animate-fade-in" noValidate>
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1.5">Mobile Number <span className="text-rose-400">*</span></label>
+                <div className="relative flex items-center">
+                  <span className="absolute left-3.5 text-xs font-extrabold text-[#ffc000] border-r border-slate-700 pr-3 pointer-events-none">🇮🇳 +91</span>
+                  <input type="tel" inputMode="numeric" maxLength={10} value={phone}
+                    onChange={(e) => { setPhone(e.target.value.replace(/\D/g, '')); setPhoneErr(''); }}
+                    onBlur={() => setPhoneErr(validatePhone(phone))}
+                    placeholder="9876543210"
+                    className={`w-full bg-[#0d1322] border rounded-xl pl-20 pr-4 py-3 text-sm font-bold text-white placeholder-slate-500 focus:outline-none transition-colors ${phoneErr ? 'border-rose-500' : 'border-slate-700 focus:border-[#ffc000]'}`}
+                  />
+                </div>
+                <FieldError msg={phoneErr} />
               </div>
+              <button type="submit" disabled={isSubmitting}
+                className="w-full py-3.5 rounded-xl bg-[#ffc000] text-[#0d1322] font-extrabold text-sm flex items-center justify-center gap-2 hover:brightness-110 disabled:opacity-50 cursor-pointer shadow-lg shadow-[#ffc000]/15 active:scale-[0.98]">
+                <span>{isSubmitting ? 'Sending OTP…' : 'Get OTP via SMS'}</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </form>
+          )}
 
+          {/* ── MOBILE OTP — Step 2 ── */}
+          {method === 'mobile' && phoneOtpStep && (
+            <form onSubmit={handleVerifyPhoneOtp} className="space-y-4 animate-fade-in" noValidate>
+              <p className="text-xs font-bold text-slate-300 text-center">OTP sent to <span className="text-[#ffc000]">+91 {phone}</span></p>
+              <OtpInput value={phoneOtp} onChange={(v) => { setPhoneOtp(v); setPhoneOtpErr(''); }} error={phoneOtpErr} />
+              <button type="submit" disabled={isSubmitting}
+                className="w-full py-3.5 rounded-xl bg-[#2ed573] text-[#0d1322] font-extrabold text-sm flex items-center justify-center gap-2 hover:brightness-110 disabled:opacity-50 cursor-pointer shadow-lg active:scale-[0.98]">
+                <CheckCircle2 className="w-4 h-4" />
+                <span>{isSubmitting ? 'Verifying…' : 'Verify & Log In'}</span>
+              </button>
+              <button type="button" onClick={() => { setPhoneOtpStep(false); setPhoneOtp(''); clearAll(); }}
+                className="w-full text-center text-slate-400 hover:text-white font-bold text-xs cursor-pointer transition-colors">
+                ← Change Number
+              </button>
+            </form>
+          )}
+
+          {/* ── EMAIL OTP — Step 1 ── */}
+          {method === 'email' && !emailOtpStep && (
+            <form onSubmit={handleSendEmailOtp} className="space-y-4 animate-fade-in" noValidate>
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1.5">Email Address <span className="text-rose-400">*</span></label>
+                <div className="relative flex items-center">
+                  <Mail className="absolute left-3.5 w-4 h-4 text-slate-500 pointer-events-none" />
+                  <input type="email" value={email}
+                    onChange={(e) => { setEmail(e.target.value); setEmailErr(''); }}
+                    onBlur={() => setEmailErr(validateEmail(email))}
+                    placeholder="you@gmail.com"
+                    className={`w-full bg-[#0d1322] border rounded-xl pl-10 pr-4 py-3 text-sm font-medium text-white placeholder-slate-500 focus:outline-none transition-colors ${emailErr ? 'border-rose-500' : 'border-slate-700 focus:border-[#ffc000]'}`}
+                  />
+                </div>
+                <FieldError msg={emailErr} />
+              </div>
               <p className="text-[11px] text-slate-400 font-medium leading-relaxed">
-                Sign in with your Google account to sync your exam history and rank across all devices.
+                We'll send a 6-digit OTP to your inbox. Check spam if you don't see it.
               </p>
+              <button type="submit" disabled={isSubmitting}
+                className="w-full py-3.5 rounded-xl bg-[#ffc000] text-[#0d1322] font-extrabold text-sm flex items-center justify-center gap-2 hover:brightness-110 disabled:opacity-50 cursor-pointer shadow-lg shadow-[#ffc000]/15 active:scale-[0.98]">
+                <span>{isSubmitting ? 'Sending OTP…' : 'Get OTP via Email'}</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </form>
+          )}
 
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full py-3.5 px-4 rounded-2xl bg-white hover:bg-slate-100 text-slate-900 font-extrabold text-xs flex items-center justify-center gap-3 transition-all cursor-pointer shadow-lg disabled:opacity-50 active:scale-[0.98]"
-              >
+          {/* ── EMAIL OTP — Step 2 ── */}
+          {method === 'email' && emailOtpStep && (
+            <form onSubmit={handleVerifyEmailOtp} className="space-y-4 animate-fade-in" noValidate>
+              <p className="text-xs font-bold text-slate-300 text-center">OTP sent to <span className="text-[#ffc000]">{email}</span></p>
+              <OtpInput value={emailOtp} onChange={(v) => { setEmailOtp(v); setEmailOtpErr(''); }} error={emailOtpErr} />
+              <button type="submit" disabled={isSubmitting}
+                className="w-full py-3.5 rounded-xl bg-[#2ed573] text-[#0d1322] font-extrabold text-sm flex items-center justify-center gap-2 hover:brightness-110 disabled:opacity-50 cursor-pointer shadow-lg active:scale-[0.98]">
+                <CheckCircle2 className="w-4 h-4" />
+                <span>{isSubmitting ? 'Verifying…' : 'Verify & Log In'}</span>
+              </button>
+              <button type="button" onClick={() => { setEmailOtpStep(false); setEmailOtp(''); clearAll(); }}
+                className="w-full text-center text-slate-400 hover:text-white font-bold text-xs cursor-pointer transition-colors">
+                ← Change Email
+              </button>
+            </form>
+          )}
+
+          {/* ── GOOGLE (email input) ── */}
+          {method === 'google' && (
+            <form onSubmit={handleGoogleLogin} className="space-y-4 animate-fade-in" noValidate>
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1.5">Google Account Email <span className="text-rose-400">*</span></label>
+                <input type="email" value={googleEmail}
+                  onChange={(e) => { setGoogleEmail(e.target.value); setGoogleEmailErr(''); }}
+                  onBlur={() => setGoogleEmailErr(validateEmail(googleEmail))}
+                  placeholder="you@gmail.com"
+                  className={`w-full bg-[#0d1322] border rounded-xl px-4 py-3 text-sm font-medium text-white placeholder-slate-500 focus:outline-none transition-colors ${googleEmailErr ? 'border-rose-500' : 'border-slate-700 focus:border-[#ffc000]'}`}
+                />
+                <FieldError msg={googleEmailErr} />
+              </div>
+              <p className="text-[11px] text-slate-400 font-medium leading-relaxed">
+                Sign in with your Google account to sync exam history and rank across devices.
+              </p>
+              <button type="submit" disabled={isSubmitting}
+                className="w-full py-3.5 px-4 rounded-2xl bg-white hover:bg-slate-100 text-slate-900 font-extrabold text-xs flex items-center justify-center gap-3 transition-all cursor-pointer shadow-lg disabled:opacity-50 active:scale-[0.98]">
                 <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
                   <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
@@ -251,91 +386,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLoginSuccess }) => {
             </form>
           )}
 
-          {/* ── MOBILE OTP — Step 1: Phone input ── */}
-          {loginMethod === 'mobile' && !otpStep && (
-            <form onSubmit={handleSendOtp} className="space-y-4 pt-1 animate-fade-in" noValidate>
-              <div className="space-y-1">
-                <label className="block text-xs font-bold text-slate-300">
-                  Mobile Number <span className="text-rose-400">*</span>
-                </label>
-                <div className="relative flex items-center">
-                  <div className="absolute left-3.5 text-xs font-extrabold text-[#ffc000] flex items-center gap-1 border-r border-slate-700 pr-3 pointer-events-none">
-                    🇮🇳 +91
-                  </div>
-                  <input
-                    type="tel"
-                    inputMode="numeric"
-                    maxLength={10}
-                    value={mobileNumber}
-                    onChange={(e) => { setMobileNumber(e.target.value.replace(/\D/g, '')); setMobileError(''); }}
-                    onBlur={() => setMobileError(validatePhone(mobileNumber))}
-                    placeholder="9876543210"
-                    className={`w-full bg-[#0d1322] border rounded-xl pl-20 pr-4 py-3 text-sm font-bold text-white placeholder-slate-500 focus:outline-none transition-colors ${
-                      mobileError ? 'border-rose-500 focus:border-rose-400' : 'border-slate-700 focus:border-[#ffc000]'
-                    }`}
-                  />
-                </div>
-                <FieldError msg={mobileError} />
-              </div>
-
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full py-3.5 rounded-xl bg-[#ffc000] text-[#0d1322] font-extrabold text-sm flex items-center justify-center gap-2 hover:brightness-110 disabled:opacity-50 cursor-pointer shadow-lg shadow-[#ffc000]/15 active:scale-[0.98]"
-              >
-                <span>{isSubmitting ? 'Sending OTP…' : 'Get OTP Code'}</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            </form>
-          )}
-
-          {/* ── MOBILE OTP — Step 2: OTP input ── */}
-          {loginMethod === 'mobile' && otpStep && (
-            <form onSubmit={handleVerifyOtp} className="space-y-4 pt-1 animate-fade-in" noValidate>
-              <div className="space-y-3 text-center">
-                <p className="text-xs font-bold text-slate-300">
-                  Enter OTP sent to <span className="text-[#ffc000]">+91 {mobileNumber}</span>
-                </p>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={6}
-                  value={otpCode}
-                  onChange={(e) => { setOtpCode(e.target.value.replace(/\D/g, '')); setOtpError(''); }}
-                  placeholder="• • • • • •"
-                  autoFocus
-                  className={`w-40 mx-auto block bg-[#0d1322] border-2 rounded-xl py-3 text-center text-xl font-black tracking-widest text-white focus:outline-none shadow-inner transition-colors ${
-                    otpError ? 'border-rose-500' : 'border-[#ffc000]'
-                  }`}
-                />
-                <FieldError msg={otpError} />
-                {otpHint && (
-                  <p className="text-[11px] text-amber-400 font-bold bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-1.5">
-                    🛠 {otpHint}
-                  </p>
-                )}
-              </div>
-
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full py-3.5 rounded-xl bg-[#2ed573] text-[#0d1322] font-extrabold text-sm flex items-center justify-center gap-2 hover:brightness-110 disabled:opacity-50 cursor-pointer shadow-lg active:scale-[0.98]"
-              >
-                <CheckCircle2 className="w-4 h-4" />
-                <span>{isSubmitting ? 'Verifying…' : 'Verify & Log In'}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => { setOtpStep(false); setOtpCode(''); clearErrors(); }}
-                className="w-full text-center text-slate-400 hover:text-white font-bold text-xs block cursor-pointer transition-colors"
-              >
-                ← Change Mobile Number
-              </button>
-            </form>
-          )}
-
-          {/* Footer trust badge */}
+          {/* Trust footer */}
           <div className="pt-3 border-t border-slate-800/80 text-center flex items-center justify-center gap-2 text-[10px] text-slate-400 font-medium">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
             <span>Secure Authentication — No Passwords Stored</span>
