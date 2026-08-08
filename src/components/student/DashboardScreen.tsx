@@ -24,7 +24,7 @@ interface DashboardScreenProps {
 }
 
 export const DashboardScreen: React.FC<DashboardScreenProps> = ({
-  studentName = 'K. S. Madhavan',
+  studentName = 'PSC Aspirant',
   onNavigateTab,
   activeTab
 }) => {

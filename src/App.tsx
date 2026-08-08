@@ -1,5 +1,14 @@
 import { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  useNavigate,
+  useLocation,
+  useParams,
+  useSearchParams
+} from 'react-router-dom';
 import { Header, SideDrawer, PwaInstallBanner } from './components/common';
 import { apiService } from './services/api';
 import { NativeService } from './services/nativeService';
@@ -28,7 +37,7 @@ import { LandingPage } from './components/landing/LandingPage';
 import type { NavTab, StudentProfileForm } from './types';
 
 
-// ─── Protected Route Wrapper ────────────────────────────────────────────────
+// ─── Route guards ────────────────────────────────────────────────────────────
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const session = AuthService.getCurrentSession();
   if (!session) return <Navigate to="/auth" replace />;
@@ -43,76 +52,99 @@ function RequireAdmin({ children }: { children: React.ReactNode }) {
 }
 
 
-// ─── Main App Shell (authenticated layout) ─────────────────────────────────
-function AppShell() {
+// ─── Thin wrappers that pull URL params for screens ──────────────────────────
+function TopicWorkspaceRoute({
+  onStartExam,
+  onBack,
+}: {
+  onStartExam: (count: number) => void;
+  onBack: () => void;
+}) {
+  const { courseId = '', topicId = '' } = useParams<{ courseId: string; topicId: string }>();
+  return (
+    <TopicWorkspaceScreen
+      courseId={courseId}
+      topicId={topicId}
+      onBackToCourse={onBack}
+      onStartExam={onStartExam}
+    />
+  );
+}
+
+function ExamRunnerRoute({ onExit }: { onExit: () => void }) {
+  const [searchParams] = useSearchParams();
+  const count = parseInt(searchParams.get('count') || '20', 10);
+  const navigate = useNavigate();
+  return (
+    <ExamRunnerScreen
+      questionCount={count}
+      onFinishExam={onExit}
+      onExitExam={onExit}
+    />
+  );
+}
+
+function OnboardingRoute() {
+  const navigate = useNavigate();
+  const session = AuthService.getCurrentSession();
+  return (
+    <OnboardingProfileScreen
+      initialMobile={session?.phone || ''}
+      onSaveProfile={async (profile) => {
+        await apiService.updateProfile(profile);
+        navigate('/dashboard', { replace: true });
+      }}
+    />
+  );
+}
+
+
+// ─── Tab → Path mapping ──────────────────────────────────────────────────────
+const TAB_TO_PATH: Record<NavTab, string> = {
+  dashboard: '/dashboard',
+  courses: '/courses',
+  learning: '/learning',
+  tests: '/tests',
+  syllabus: '/syllabus',
+  performance_rank: '/performance',
+  downloads: '/downloads',
+  notifications: '/notifications',
+  profile: '/profile',
+  admin_analytics: '/admin/analytics',
+  admin_qbank: '/admin/questions',
+  admin_courses: '/admin/courses',
+  admin_students: '/admin/students',
+  auth: '/auth',
+  onboarding: '/onboarding',
+};
+
+const PATH_TO_TAB: Record<string, NavTab> = Object.fromEntries(
+  Object.entries(TAB_TO_PATH).map(([k, v]) => [v, k as NavTab])
+);
+
+
+// ─── App Shell (authenticated layout — mounts ONCE for all protected routes) ─
+function AppShell({ studentProfile, setStudentProfile, userRole, onLogout }: {
+  studentProfile: StudentProfileForm | null;
+  setStudentProfile: (p: StudentProfileForm | null) => void;
+  userRole: UserRole;
+  onLogout: () => void;
+}) {
   const navigate = useNavigate();
   const location = useLocation();
-
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [studentProfile, setStudentProfile] = useState<StudentProfileForm | null>(null);
-  const [userRole, setUserRole] = useState<UserRole>('student');
 
-  // Derive activeTab from URL path
-  const pathToTab: Record<string, NavTab> = {
-    '/dashboard': 'dashboard',
-    '/courses': 'courses',
-    '/learning': 'learning',
-    '/tests': 'tests',
-    '/syllabus': 'syllabus',
-    '/performance': 'performance_rank',
-    '/downloads': 'downloads',
-    '/notifications': 'notifications',
-    '/profile': 'profile',
-    '/admin/analytics': 'admin_analytics',
-    '/admin/questions': 'admin_qbank',
-    '/admin/courses': 'admin_courses',
-    '/admin/students': 'admin_students',
-  };
-
-  const activeTab = (pathToTab[location.pathname] || 'dashboard') as NavTab;
-
-  useEffect(() => {
-    async function loadProfileData() {
-      const session = AuthService.getCurrentSession();
-      if (session) setUserRole(session.role);
-      const p = await apiService.getProfile();
-      setStudentProfile(p);
-    }
-    loadProfileData();
-    NativeService.initNativeFeatures(() => {
-      navigate(-1);
-    });
-  }, []);
+  // Derive active tab from current URL
+  const pathBase = '/' + location.pathname.split('/').slice(1, 3).join('/');
+  const activeTab = (PATH_TO_TAB[location.pathname] || PATH_TO_TAB[pathBase] || 'dashboard') as NavTab;
 
   const handleTabNavigation = (tab: NavTab) => {
     if (tab.startsWith('admin_') && userRole !== 'admin') {
       alert('Access Denied: Admin CMS privileges required.');
       return;
     }
-    const tabToPath: Record<NavTab, string> = {
-      dashboard: '/dashboard',
-      courses: '/courses',
-      learning: '/learning',
-      tests: '/tests',
-      syllabus: '/syllabus',
-      performance_rank: '/performance',
-      downloads: '/downloads',
-      notifications: '/notifications',
-      profile: '/profile',
-      admin_analytics: '/admin/analytics',
-      admin_qbank: '/admin/questions',
-      admin_courses: '/admin/courses',
-      admin_students: '/admin/students',
-      auth: '/auth',
-      onboarding: '/onboarding',
-    };
-    navigate(tabToPath[tab] || '/dashboard');
+    navigate(TAB_TO_PATH[tab] || '/dashboard');
     setIsDrawerOpen(false);
-  };
-
-  const handleLogout = () => {
-    AuthService.logout();
-    navigate('/auth', { replace: true });
   };
 
   const studentDisplayName = studentProfile?.fullName || 'PSC Aspirant';
@@ -137,7 +169,7 @@ function AppShell() {
 
           <div className="space-y-1 pt-2">
             <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-3 mb-2">Student Hub</div>
-            {[
+            {([
               { id: 'dashboard', label: '🏠 Dashboard' },
               { id: 'courses', label: '📚 Course Catalog' },
               { id: 'learning', label: '🎓 My Learning' },
@@ -147,10 +179,10 @@ function AppShell() {
               { id: 'downloads', label: '💾 Offline Library' },
               { id: 'notifications', label: '🔔 Notifications' },
               { id: 'profile', label: '👤 Profile Settings' },
-            ].map((item) => (
+            ] as { id: NavTab; label: string }[]).map((item) => (
               <button
                 key={item.id}
-                onClick={() => handleTabNavigation(item.id as NavTab)}
+                onClick={() => handleTabNavigation(item.id)}
                 className={`w-full flex items-center px-3.5 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer ${
                   activeTab === item.id
                     ? 'bg-[#ffc000] text-[#0d1322] shadow-md scale-[1.02]'
@@ -165,15 +197,15 @@ function AppShell() {
           {userRole === 'admin' && (
             <div className="space-y-1 pt-4 border-t border-slate-800/80">
               <div className="text-[10px] font-bold text-amber-400 uppercase tracking-widest px-3 mb-2">Admin CMS Panel</div>
-              {[
+              {([
                 { id: 'admin_analytics', label: '📊 Analytics Overview' },
                 { id: 'admin_qbank', label: '❓ Question Bank' },
                 { id: 'admin_courses', label: '🗂️ Curriculum Editor' },
                 { id: 'admin_students', label: '👥 Student Records' },
-              ].map((item) => (
+              ] as { id: NavTab; label: string }[]).map((item) => (
                 <button
                   key={item.id}
-                  onClick={() => handleTabNavigation(item.id as NavTab)}
+                  onClick={() => handleTabNavigation(item.id)}
                   className={`w-full flex items-center px-3.5 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer ${
                     activeTab === item.id
                       ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
@@ -186,7 +218,7 @@ function AppShell() {
             </div>
           )}
 
-          {/* Sidebar Footer — Profile */}
+          {/* Sidebar footer — Profile quick-access */}
           <div className="mt-auto pt-4 border-t border-slate-800/60">
             <button
               onClick={() => handleTabNavigation('profile')}
@@ -209,7 +241,6 @@ function AppShell() {
 
         {/* Center Main Workspace */}
         <div className="flex-1 flex flex-col min-w-0">
-          {/* Top Sticky Header */}
           <Header
             onOpenDrawer={() => setIsDrawerOpen(true)}
             onOpenNotifications={() => handleTabNavigation('notifications')}
@@ -218,23 +249,20 @@ function AppShell() {
             avatarUrl={avatarUrl}
           />
 
-          {/* Android PWA Install Banner */}
           <PwaInstallBanner />
 
-          {/* Side Navigation Drawer for Mobile */}
           <SideDrawer
             isOpen={isDrawerOpen}
             onClose={() => setIsDrawerOpen(false)}
             activeTab={activeTab}
             onSelectTab={handleTabNavigation}
-            onLogout={handleLogout}
+            onLogout={onLogout}
             userRole={userRole}
             studentName={studentDisplayName}
             studentRole={userRole === 'admin' ? 'Kerala PSC Admin' : 'PSC Aspirant'}
             avatarUrl={avatarUrl || ''}
           />
 
-          {/* Main Content Routed Body */}
           <main className="flex-1 pt-[56px] px-4 md:px-8">
             <Routes>
               <Route path="/dashboard" element={
@@ -244,50 +272,46 @@ function AppShell() {
                   onNavigateTab={handleTabNavigation}
                 />
               } />
+
               <Route path="/courses" element={
                 <CoursesScreen
-                  onSelectTopicWorkspace={(courseId, topicId) => navigate(`/courses/${courseId}/${topicId}`)}
+                  onSelectTopicWorkspace={(cId, tId) => navigate(`/courses/${cId}/${tId}`)}
                   onNavigateTab={handleTabNavigation}
                 />
               } />
+
               <Route path="/courses/:courseId/:topicId" element={
-                <TopicWorkspaceScreen
-                  courseId=""
-                  topicId=""
-                  onBackToCourse={() => navigate('/courses')}
+                <TopicWorkspaceRoute
                   onStartExam={(count) => navigate(`/test/run?count=${count}`)}
+                  onBack={() => navigate('/courses')}
                 />
               } />
+
               <Route path="/learning" element={
                 <MyLearningScreen
                   onNavigateTab={handleTabNavigation}
-                  onOpenTopicWorkspace={(courseId, topicId) => navigate(`/courses/${courseId}/${topicId}`)}
+                  onOpenTopicWorkspace={(cId, tId) => navigate(`/courses/${cId}/${tId}`)}
                 />
               } />
+
               <Route path="/tests" element={
                 <MockTestsScreen
                   onStartFullMockExam={(_title, count) => navigate(`/test/run?count=${count}`)}
                   onNavigateTab={handleTabNavigation}
                 />
               } />
+
               <Route path="/test/run" element={
-                <ExamRunnerScreen
-                  questionCount={
-                    (() => {
-                      const params = new URLSearchParams(window.location.search);
-                      return parseInt(params.get('count') || '20', 10);
-                    })()
-                  }
-                  onFinishExam={() => navigate('/tests')}
-                  onExitExam={() => navigate('/tests')}
-                />
+                <ExamRunnerRoute onExit={() => navigate('/tests')} />
               } />
+
               <Route path="/syllabus" element={
                 <SyllabusScreen
                   onNavigateTab={handleTabNavigation}
                   onStartExamOnTopic={() => navigate('/test/run?count=10')}
                 />
               } />
+
               <Route path="/performance" element={
                 <PerformanceRankScreen
                   onNavigateTab={handleTabNavigation}
@@ -295,12 +319,15 @@ function AppShell() {
                   onRetakeExam={() => navigate('/test/run?count=20')}
                 />
               } />
+
               <Route path="/downloads" element={
                 <DownloadsScreen onNavigateTab={handleTabNavigation} />
               } />
+
               <Route path="/notifications" element={
                 <NotificationsScreen onNavigateTab={handleTabNavigation} />
               } />
+
               <Route path="/profile" element={
                 <ProfileScreen
                   studentProfile={studentProfile}
@@ -308,10 +335,11 @@ function AppShell() {
                     setStudentProfile(profile);
                     await apiService.updateProfile(profile);
                   }}
-                  onLogout={handleLogout}
+                  onLogout={onLogout}
                   onNavigateTab={handleTabNavigation}
                 />
               } />
+
               <Route path="/admin/analytics" element={
                 <RequireAdmin><AdminAnalyticsScreen /></RequireAdmin>
               } />
@@ -324,6 +352,8 @@ function AppShell() {
               <Route path="/admin/students" element={
                 <RequireAdmin><AdminStudentRecordsScreen /></RequireAdmin>
               } />
+
+              {/* Catch-all inside shell */}
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Routes>
           </main>
@@ -334,58 +364,111 @@ function AppShell() {
 }
 
 
-// ─── Root App with BrowserRouter ────────────────────────────────────────────
+// ─── Root App — BrowserRouter wrapping ALL routes ───────────────────────────
 export function App() {
+  const [studentProfile, setStudentProfile] = useState<StudentProfileForm | null>(null);
+  const [userRole, setUserRole] = useState<UserRole>('student');
+  const [authReady, setAuthReady] = useState(false);
+
+  useEffect(() => {
+    const session = AuthService.getCurrentSession();
+    if (session) setUserRole(session.role);
+
+    apiService.getProfile().then((p) => {
+      setStudentProfile(p);
+      setAuthReady(true);
+    });
+
+    NativeService.initNativeFeatures(() => {});
+  }, []);
+
+  if (!authReady) {
+    // Minimal loading state while IndexedDB boots
+    return (
+      <div className="min-h-screen bg-[#0b0f19] flex items-center justify-center">
+        <div className="text-center space-y-3">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#ffc000] to-amber-400 flex items-center justify-center font-black text-[#0d1322] text-xl mx-auto animate-pulse">P</div>
+          <p className="text-slate-400 text-xs font-semibold">Loading PSC Master…</p>
+        </div>
+      </div>
+    );
+  }
+
+  const handleLoginSuccess = (session: { role: UserRole; phone?: string }) => {
+    setUserRole(session.role);
+  };
+
+  const handleLogout = () => {
+    AuthService.logout();
+    setStudentProfile(null);
+    setUserRole('student');
+  };
+
   return (
     <BrowserRouter>
-      <Routes>
-        {/* Public routes */}
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/auth" element={
-          <AuthScreen
-            onLoginSuccess={(session) => {
-              // Navigate will happen inside AuthScreen after this sets session
-              window.location.href = session.role === 'admin' ? '/admin/analytics' : '/dashboard';
-            }}
-          />
-        } />
-        <Route path="/onboarding" element={
-          <RequireAuth>
-            <OnboardingScreenWrapper />
-          </RequireAuth>
-        } />
-
-        {/* Protected app routes */}
-        <Route path="/dashboard" element={<RequireAuth><AppShell /></RequireAuth>} />
-        <Route path="/courses/*" element={<RequireAuth><AppShell /></RequireAuth>} />
-        <Route path="/learning" element={<RequireAuth><AppShell /></RequireAuth>} />
-        <Route path="/tests" element={<RequireAuth><AppShell /></RequireAuth>} />
-        <Route path="/test/run" element={<RequireAuth><AppShell /></RequireAuth>} />
-        <Route path="/syllabus" element={<RequireAuth><AppShell /></RequireAuth>} />
-        <Route path="/performance" element={<RequireAuth><AppShell /></RequireAuth>} />
-        <Route path="/downloads" element={<RequireAuth><AppShell /></RequireAuth>} />
-        <Route path="/notifications" element={<RequireAuth><AppShell /></RequireAuth>} />
-        <Route path="/profile" element={<RequireAuth><AppShell /></RequireAuth>} />
-        <Route path="/admin/*" element={<RequireAuth><AppShell /></RequireAuth>} />
-
-        {/* Fallback */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+      <AppRouter
+        studentProfile={studentProfile}
+        setStudentProfile={setStudentProfile}
+        userRole={userRole}
+        onLoginSuccess={handleLoginSuccess}
+        onLogout={handleLogout}
+      />
     </BrowserRouter>
   );
 }
 
-function OnboardingScreenWrapper() {
+// ─── Inner router (needs BrowserRouter context) ──────────────────────────────
+function AppRouter({
+  studentProfile,
+  setStudentProfile,
+  userRole,
+  onLoginSuccess,
+  onLogout,
+}: {
+  studentProfile: StudentProfileForm | null;
+  setStudentProfile: (p: StudentProfileForm | null) => void;
+  userRole: UserRole;
+  onLoginSuccess: (session: { role: UserRole; phone?: string }) => void;
+  onLogout: () => void;
+}) {
   const navigate = useNavigate();
-  const session = AuthService.getCurrentSession();
+
   return (
-    <OnboardingProfileScreen
-      initialMobile={session?.phone || ''}
-      onSaveProfile={async (profile) => {
-        await apiService.updateProfile(profile);
-        navigate('/dashboard', { replace: true });
-      }}
-    />
+    <Routes>
+      {/* ── Public routes ── */}
+      <Route path="/" element={<LandingPage />} />
+      <Route path="/auth" element={
+        <AuthScreen
+          onLoginSuccess={(session) => {
+            onLoginSuccess({ role: session.role, phone: session.phone });
+            // Use React Router navigate — no full page reload
+            navigate(session.role === 'admin' ? '/admin/analytics' : '/dashboard', { replace: true });
+          }}
+        />
+      } />
+
+      {/* ── Onboarding ── */}
+      <Route path="/onboarding" element={
+        <RequireAuth>
+          <OnboardingRoute />
+        </RequireAuth>
+      } />
+
+      {/* ── Protected app shell — single mount for ALL /app routes ── */}
+      <Route path="/*" element={
+        <RequireAuth>
+          <AppShell
+            studentProfile={studentProfile}
+            setStudentProfile={setStudentProfile}
+            userRole={userRole}
+            onLogout={() => {
+              onLogout();
+              navigate('/auth', { replace: true });
+            }}
+          />
+        </RequireAuth>
+      } />
+    </Routes>
   );
 }
 
