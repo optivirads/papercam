@@ -45,9 +45,10 @@ export const apiService = {
   },
 
   // Student Profile API
-  async getProfile(): Promise<StudentProfileForm> {
+  async getProfile(): Promise<StudentProfileForm | null> {
     return await dbService.getProfile();
   },
+
 
   async updateProfile(profile: StudentProfileForm): Promise<void> {
     await dbService.saveProfile(profile);

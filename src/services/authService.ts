@@ -63,13 +63,13 @@ export class AuthService {
 
     localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
 
-    // Also persist student profile in IndexedDB
+    // Persist minimal profile in IndexedDB — user will complete full profile during onboarding
     await dbService.saveProfile({
       fullName: session.name,
       email: session.email || '',
       mobileNumber: '',
       qualification: 'Graduate',
-      targetExams: ['LDC 2024 Batch']
+      targetExams: []
     });
 
     return session;
@@ -96,13 +96,13 @@ export class AuthService {
 
     localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
 
-    // Also persist student profile in IndexedDB
+    // Persist minimal profile in IndexedDB — user will complete full profile during onboarding
     await dbService.saveProfile({
       fullName: session.name,
       email: '',
       mobileNumber: phoneNumber,
       qualification: 'Graduate',
-      targetExams: ['LDC 2024 Batch']
+      targetExams: []
     });
 
     return session;

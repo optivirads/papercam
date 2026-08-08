@@ -19,7 +19,7 @@ export default defineConfig({
         display: 'standalone',
         orientation: 'portrait',
         scope: '/',
-        start_url: '/',
+        start_url: '/dashboard',
         icons: [
           {
             src: 'icon-512x512.png',
@@ -78,4 +78,9 @@ export default defineConfig({
       }
     })
   ],
+  server: {
+    // React Router BrowserRouter: serve index.html for all unmatched routes
+    historyApiFallback: true,
+  }
 })
+

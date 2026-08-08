@@ -28,53 +28,7 @@ export interface CourseRecord {
   thumbnailUrl: string;
 }
 
-const defaultProfile: StudentProfileForm = {
-  fullName: 'K. S. Madhavan',
-  email: 'madhavan.ks@example.com',
-  mobileNumber: '9876543210',
-  qualification: 'Graduate',
-  profilePicUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80',
-  targetExams: ['LDC 2024 Batch', '10th Prelims VFA']
-};
-
-const defaultAdminStudents: AdminStudentRecord[] = [
-  {
-    id: 's-1',
-    studentId: 'PSC-24-1001',
-    initials: 'MK',
-    name: 'K. S. Madhavan',
-    batchTag: 'LDC 2024 Batch',
-    enrolledDate: '12 Jan 2024',
-    email: 'madhavan.ks@example.com',
-    phone: '+91 98765 43210',
-    status: 'active',
-    progressPercent: 78
-  },
-  {
-    id: 's-2',
-    studentId: 'PSC-24-1002',
-    initials: 'AN',
-    name: 'Anjali Nair',
-    batchTag: '10th Prelims VFA',
-    enrolledDate: '01 Feb 2024',
-    email: 'anjali.nair@example.com',
-    phone: '+91 98123 45678',
-    status: 'active',
-    progressPercent: 62
-  },
-  {
-    id: 's-3',
-    studentId: 'PSC-24-1003',
-    initials: 'VR',
-    name: 'Vishnu Raj',
-    batchTag: 'Degree Level KAS',
-    enrolledDate: '18 Nov 2023',
-    email: 'vishnuraj.psc@example.com',
-    phone: '+91 99887 76655',
-    status: 'active',
-    progressPercent: 91
-  }
-];
+// No hardcoded default profiles — profiles are created during onboarding.
 
 class IndexedDbManager {
   private dbPromise: Promise<IDBDatabase> | null = null;
@@ -117,29 +71,13 @@ class IndexedDbManager {
   }
 
   private async seedInitialData(db: IDBDatabase): Promise<void> {
-    const transaction = db.transaction(['questions', 'student_profile', 'student_records'], 'readwrite');
+    // Seed question bank only — no fake profiles or student records
+    const transaction = db.transaction(['questions'], 'readwrite');
     const questionStore = transaction.objectStore('questions');
-    const profileStore = transaction.objectStore('student_profile');
-    const recordsStore = transaction.objectStore('student_records');
-
     const countReq = questionStore.count();
     countReq.onsuccess = () => {
       if (countReq.result === 0) {
         initialPscQuestionBank.forEach((q) => questionStore.put(q));
-      }
-    };
-
-    const profReq = profileStore.count();
-    profReq.onsuccess = () => {
-      if (profReq.result === 0) {
-        profileStore.put({ id: 'main', ...defaultProfile });
-      }
-    };
-
-    const recReq = recordsStore.count();
-    recReq.onsuccess = () => {
-      if (recReq.result === 0) {
-        defaultAdminStudents.forEach((st) => recordsStore.put(st));
       }
     };
   }
@@ -184,7 +122,7 @@ class IndexedDbManager {
   }
 
   // --- Profile Methods ---
-  async getProfile(): Promise<StudentProfileForm> {
+  async getProfile(): Promise<StudentProfileForm | null> {
     try {
       const db = await this.initDB();
       return new Promise((resolve) => {
@@ -193,15 +131,15 @@ class IndexedDbManager {
         req.onsuccess = () => {
           if (req.result) {
             const { id, ...profileData } = req.result;
-            resolve(profileData);
+            resolve(profileData as StudentProfileForm);
           } else {
-            resolve(defaultProfile);
+            resolve(this.getLocalStorage<StudentProfileForm | null>('student_profile', null));
           }
         };
-        req.onerror = () => resolve(this.getLocalStorage('student_profile', defaultProfile));
+        req.onerror = () => resolve(this.getLocalStorage<StudentProfileForm | null>('student_profile', null));
       });
     } catch {
-      return this.getLocalStorage('student_profile', defaultProfile);
+      return this.getLocalStorage<StudentProfileForm | null>('student_profile', null);
     }
   }
 
@@ -248,11 +186,11 @@ class IndexedDbManager {
       return new Promise((resolve) => {
         const tx = db.transaction('student_records', 'readonly');
         const req = tx.objectStore('student_records').getAll();
-        req.onsuccess = () => resolve(req.result || defaultAdminStudents);
-        req.onerror = () => resolve(this.getLocalStorage('student_records', defaultAdminStudents));
+        req.onsuccess = () => resolve(req.result || []);
+        req.onerror = () => resolve(this.getLocalStorage('student_records', []));
       });
     } catch {
-      return this.getLocalStorage('student_records', defaultAdminStudents);
+      return this.getLocalStorage('student_records', []);
     }
   }
 
@@ -262,7 +200,7 @@ class IndexedDbManager {
       const tx = db.transaction('student_records', 'readwrite');
       tx.objectStore('student_records').put(student);
     } catch {
-      const list = this.getLocalStorage('student_records', defaultAdminStudents);
+      const list = this.getLocalStorage('student_records', []);
       const updated = [student, ...list.filter((s: AdminStudentRecord) => s.id !== student.id)];
       this.setLocalStorage('student_records', updated);
     }
