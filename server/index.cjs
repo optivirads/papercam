@@ -191,10 +191,78 @@ app.get('/api/questions', (req, res) => {
   res.json({ success: true, questions });
 });
 
-// Dynamic Kerala PSC Exam Question Fetcher Endpoint
+// Dynamic Real-time Internet Question Search & Fetcher Endpoint
 app.get('/api/questions/fetch-internet', async (req, res) => {
-  const amount = Math.min(Math.max(parseInt(req.query.amount || '20', 10), 5), 100);
-  const questions = db.getQuestions(amount);
+  const amount = Math.min(Math.max(parseInt(req.query.amount || '20', 10), 5), 50);
+  const liveResults = [];
+
+  // 1. Real-time Wikipedia Search API query for topic-related facts
+  try {
+    const wikiTopics = ['Sree Narayana Guru', 'Vaikom Satyagraha', 'Constitution of India Article 14', 'Periyar River Kerala', 'Silent Valley National Park'];
+    const topic = wikiTopics[Math.floor(Math.random() * wikiTopics.length)];
+    const wikiRes = await fetch(`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(topic)}&format=json&origin=*`);
+    if (wikiRes.ok) {
+      const wikiData = await wikiRes.json();
+      const hits = wikiData?.query?.search || [];
+      hits.slice(0, 5).forEach((hit, idx) => {
+        const clean = hit.snippet.replace(/<[^>]*>/g, '');
+        const q = {
+          id: Date.now() + idx + Math.floor(Math.random() * 10000),
+          text: `[Realtime Web Search - ${hit.title}] What key historical detail is associated with ${hit.title}?`,
+          textMl: `[തത്സമയ ഇന്റർനെറ്റ് വിവരശേഖരണം - ${hit.title}] ${hit.title} എന്ന വിഷയവുമായി ബന്ധപ്പെട്ട വസ്തുത ഏതാണ്?`,
+          optionA: clean.length > 80 ? clean.substring(0, 80) + '...' : clean,
+          optionB: 'Article 14 - Equality before Law',
+          optionC: 'Vaikom Satyagraha (1924)',
+          optionD: 'Temple Entry Proclamation (1936)',
+          correctOption: 'A',
+          explanation: `Realtime Web Fact: ${clean}`,
+          explanationMl: `തത്സമയ വിവരശേഖരണം: ${clean}`
+        };
+        db.saveQuestion(q);
+        liveResults.push(q);
+      });
+    }
+  } catch (e) {
+    console.error('Server real-time Wikipedia fetch error:', e.message);
+  }
+
+  // 2. Real-time Trivia API query
+  try {
+    const triviaRes = await fetch(`https://opentdb.com/api.php?amount=${amount}&type=multiple`);
+    if (triviaRes.ok) {
+      const triviaData = await triviaRes.json();
+      if (triviaData.results && Array.isArray(triviaData.results)) {
+        triviaData.results.forEach((item, idx) => {
+          const decode = (s) => s.replace(/&quot;/g, '"').replace(/&#039;/g, "'").replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+          const text = decode(item.question);
+          const correctAnswer = decode(item.correct_answer);
+          const incorrect = item.incorrect_answers.map(decode);
+          const options = [correctAnswer, ...incorrect].sort(() => 0.5 - Math.random());
+          const correctIdx = options.indexOf(correctAnswer);
+          const optionKeys = ['A', 'B', 'C', 'D'];
+
+          const q = {
+            id: Date.now() + idx + Math.floor(Math.random() * 20000),
+            text: `[Live Internet Question - ${decode(item.category)}] ${text}`,
+            textMl: `[തത്സമയ ഇന്റർനെറ്റ് ചോദ്യശേഖരം - ${decode(item.category)}] ${text}`,
+            optionA: options[0] || '',
+            optionB: options[1] || '',
+            optionC: options[2] || '',
+            optionD: options[3] || '',
+            correctOption: optionKeys[correctIdx] || 'A',
+            explanation: `Correct Answer: ${correctAnswer}. Category: ${item.category}`,
+            explanationMl: `ശരിയായ ഉത്തരം: ${correctAnswer}`
+          };
+          db.saveQuestion(q);
+          liveResults.push(q);
+        });
+      }
+    }
+  } catch (e) {
+    console.error('Server real-time Trivia fetch error:', e.message);
+  }
+
+  const questions = liveResults.length > 0 ? liveResults : db.getQuestions(amount);
   res.json({ success: true, count: questions.length, questions });
 });
 
