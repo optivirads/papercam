@@ -334,6 +334,37 @@ export const AdminQuestionBankScreen: React.FC = () => {
           <Sparkles className="w-4 h-4" />
           <span>AI Web Generator</span>
         </button>
+
+        <button
+          onClick={async () => {
+            const countStr = prompt('Enter number of live internet questions to fetch dynamically (e.g. 10, 20, 50):', '20');
+            if (!countStr) return;
+            const count = parseInt(countStr, 10) || 20;
+            const fetched = await apiService.fetchQuestionsFromInternet(count);
+            const qList = await apiService.getQuestions();
+            const mapped: AdminQuestion[] = qList.map((q) => ({
+              id: String(q.id),
+              questionText: q.text,
+              optionsSummary: `A) ${q.optionA} B) ${q.optionB} C) ${q.optionC} D) ${q.optionD}`,
+              optionA: q.optionA,
+              optionB: q.optionB,
+              optionC: q.optionC,
+              optionD: q.optionD,
+              correctOption: q.correctOption,
+              explanation: q.explanation,
+              status: 'verified',
+              topicTag: 'Internet Live Quiz',
+              examLevelTag: 'All Levels',
+              difficulty: 'Medium'
+            }));
+            setQuestions(mapped);
+            alert(`Fetched ${fetched.length} live questions from the Internet API & saved to DB!`);
+          }}
+          className="py-3 px-3 rounded-xl bg-blue-500 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 hover:brightness-110 active:scale-[0.98] transition-all cursor-pointer shadow-lg shadow-blue-500/20 col-span-2"
+        >
+          <Globe className="w-4 h-4 text-white" />
+          <span>Fetch Dynamic Internet Questions</span>
+        </button>
       </div>
 
       <div className="space-y-3">

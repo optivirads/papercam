@@ -63,18 +63,33 @@ export const ExamRunnerScreen: React.FC<ExamRunnerScreenProps> = ({
       const targetCount = questionCount > 0 ? questionCount : 20;
       setSecondsLeft(targetCount * 45);
 
+      let fetchedFromApi: Question[] = [];
+
       try {
-        const allQ = await apiService.getQuestions(targetCount);
-        if (allQ && allQ.length >= targetCount) {
-          const selected = [...allQ].sort(() => 0.5 - Math.random()).slice(0, targetCount);
-          setQuestions(selected);
-          return;
-        }
+        fetchedFromApi = await apiService.getQuestions(targetCount);
       } catch {
         // Fallback
       }
 
-      // Guaranteed fallback: generate exactly targetCount questions
+      // If we don't have enough local/cached questions, dynamically fetch from the Internet!
+      if (fetchedFromApi.length < targetCount) {
+        try {
+          const internetQ = await apiService.fetchQuestionsFromInternet(targetCount);
+          if (internetQ && internetQ.length > 0) {
+            fetchedFromApi = [...fetchedFromApi, ...internetQ];
+          }
+        } catch {
+          // Fallback to procedural generator if internet is offline
+        }
+      }
+
+      if (fetchedFromApi.length >= targetCount) {
+        const selected = [...fetchedFromApi].sort(() => 0.5 - Math.random()).slice(0, targetCount);
+        setQuestions(selected);
+        return;
+      }
+
+      // Guaranteed fallback: generate exactly targetCount questions procedurally
       const expanded = getExpandedQuestionBank(targetCount);
       setQuestions(expanded);
     }

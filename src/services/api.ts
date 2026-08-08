@@ -23,6 +23,22 @@ export const apiService = {
     return await dbService.getQuestions(count);
   },
 
+  async fetchQuestionsFromInternet(amount: number = 20): Promise<Question[]> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/questions/fetch-internet?amount=${amount}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && Array.isArray(data.questions) && data.questions.length > 0) {
+          return data.questions;
+        }
+      }
+    } catch (e) {
+      // Fallback to direct client-side Internet fetch
+    }
+    const { InternetQuestionFetcher } = await import('./internetQuestionFetcher');
+    return await InternetQuestionFetcher.fetchQuestionsFromInternet(amount);
+  },
+
   async saveQuestion(question: Question): Promise<void> {
     try {
       await fetch(`${API_BASE_URL}/questions`, {
