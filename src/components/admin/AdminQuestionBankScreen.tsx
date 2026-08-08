@@ -36,52 +36,6 @@ export interface AdminQuestion {
   sourcePdf?: string;
 }
 
-const initialQuestions: AdminQuestion[] = [
-  {
-    id: 'q-1',
-    questionText: 'Who founded the Advaita Ashram at Aluva?',
-    optionsSummary: 'A) Chattampi Swamikal B) Sree Narayana Guru C) Vagbhatananda D) Brahmananda Sivayogi',
-    optionA: 'Chattampi Swamikal',
-    optionB: 'Sree Narayana Guru',
-    optionC: 'Vagbhatananda',
-    optionD: 'Brahmananda Sivayogi',
-    correctOption: 'B',
-    explanation: 'Sree Narayana Guru established the Advaita Ashram at Aluva in 1913 with the motto "One Caste, One Religion, One God for Man".',
-    status: 'verified',
-    topicTag: 'Renaissance',
-    examLevelTag: 'Degree Level',
-    difficulty: 'Medium'
-  },
-  {
-    id: 'q-2',
-    questionText: 'Which article of the Indian Constitution deals with the Right to Equality?',
-    optionsSummary: 'A) Article 14 B) Article 19 C) Article 21 D) Article 32',
-    optionA: 'Article 14',
-    optionB: 'Article 19',
-    optionC: 'Article 21',
-    optionD: 'Article 32',
-    correctOption: 'A',
-    explanation: 'Article 14 guarantees equality before the law and equal protection of the laws within the territory of India.',
-    status: 'verified',
-    topicTag: 'Constitution',
-    examLevelTag: 'LDC Level',
-    difficulty: 'Easy'
-  },
-  {
-    id: 'q-3',
-    questionText: 'If a train 150m long crosses a pole in 15 seconds, what is its speed in km/hr?',
-    optionsSummary: 'A) 36 km/hr B) 45 km/hr C) 54 km/hr D) 60 km/hr',
-    optionA: '36 km/hr',
-    optionB: '45 km/hr',
-    optionC: '54 km/hr',
-    optionD: '60 km/hr',
-    correctOption: 'A',
-    explanation: 'Speed = Distance / Time = 150m / 15s = 10 m/s. In km/hr = 10 * (18/5) = 36 km/hr.',
-    status: 'flagged',
-    topicTag: 'Arithmetic',
-    examLevelTag: 'Degree Level',
-    difficulty: 'Hard'
-  }
 ];
 
 export const AdminQuestionBankScreen: React.FC = () => {
@@ -337,33 +291,16 @@ export const AdminQuestionBankScreen: React.FC = () => {
 
         <button
           onClick={async () => {
-            const countStr = prompt('Enter number of live Kerala PSC questions to fetch dynamically (e.g. 10, 20, 50, 100):', '20');
-            if (!countStr) return;
-            const count = parseInt(countStr, 10) || 20;
-            const fetched = await apiService.fetchQuestionsFromInternet(count);
-            const qList = await apiService.getQuestions();
-            const mapped: AdminQuestion[] = qList.map((q) => ({
-              id: String(q.id),
-              questionText: q.text,
-              optionsSummary: `A) ${q.optionA} B) ${q.optionB} C) ${q.optionC} D) ${q.optionD}`,
-              optionA: q.optionA,
-              optionB: q.optionB,
-              optionC: q.optionC,
-              optionD: q.optionD,
-              correctOption: q.correctOption,
-              explanation: q.explanation,
-              status: 'verified',
-              topicTag: 'Kerala PSC Question',
-              examLevelTag: 'All Levels',
-              difficulty: 'Medium'
-            }));
-            setQuestions(mapped);
-            alert(`Fetched ${fetched.length} live Kerala PSC syllabus questions & saved to DB!`);
+            if (confirm('Are you sure you want to delete ALL questions from the question bank?')) {
+              await apiService.clearAllQuestions();
+              setQuestions([]);
+              alert('All questions have been cleared from the database.');
+            }
           }}
-          className="py-3 px-3 rounded-xl bg-blue-500 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 hover:brightness-110 active:scale-[0.98] transition-all cursor-pointer shadow-lg shadow-blue-500/20 col-span-2"
+          className="py-3 px-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 active:scale-[0.98] transition-all cursor-pointer shadow-lg shadow-rose-600/20 col-span-2"
         >
-          <Globe className="w-4 h-4 text-white" />
-          <span>Fetch Dynamic Kerala PSC Questions</span>
+          <Trash2 className="w-4 h-4 text-white" />
+          <span>Clear All Questions</span>
         </button>
       </div>
 

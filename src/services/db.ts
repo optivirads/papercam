@@ -71,15 +71,7 @@ class IndexedDbManager {
   }
 
   private async seedInitialData(db: IDBDatabase): Promise<void> {
-    // Seed question bank only — no fake profiles or student records
-    const transaction = db.transaction(['questions'], 'readwrite');
-    const questionStore = transaction.objectStore('questions');
-    const countReq = questionStore.count();
-    countReq.onsuccess = () => {
-      if (countReq.result === 0) {
-        initialPscQuestionBank.forEach((q) => questionStore.put(q));
-      }
-    };
+    // No automatic question seeding
   }
 
   // --- Questions Methods ---
@@ -90,24 +82,17 @@ class IndexedDbManager {
         const tx = db.transaction('questions', 'readonly');
         const store = tx.objectStore('questions');
         const req = store.getAll();
-        req.onsuccess = () => resolve(req.result || initialPscQuestionBank);
-        req.onerror = () => resolve(this.getLocalStorage('questions', initialPscQuestionBank));
+        req.onsuccess = () => resolve(req.result || []);
+        req.onerror = () => resolve(this.getLocalStorage('questions', []));
       });
 
       if (requestedCount && requestedCount > 0) {
-        if (stored.length >= requestedCount) {
-          return stored.slice(0, requestedCount);
-        }
-        return getExpandedQuestionBank(requestedCount);
+        return stored.slice(0, requestedCount);
       }
 
-      return stored.length > 0 ? stored : getExpandedQuestionBank(20);
-    } catch {
-      const stored = this.getLocalStorage('questions', initialPscQuestionBank);
-      if (requestedCount && requestedCount > 0) {
-        return getExpandedQuestionBank(requestedCount);
-      }
       return stored;
+    } catch {
+      return this.getLocalStorage('questions', []);
     }
   }
 
@@ -117,7 +102,7 @@ class IndexedDbManager {
       const tx = db.transaction('questions', 'readwrite');
       tx.objectStore('questions').put(question);
     } catch {
-      const list = this.getLocalStorage('questions', initialPscQuestionBank);
+      const list = this.getLocalStorage('questions', []);
       const updated = [question, ...list.filter((q: Question) => q.id !== question.id)];
       this.setLocalStorage('questions', updated);
     }
@@ -129,9 +114,20 @@ class IndexedDbManager {
       const tx = db.transaction('questions', 'readwrite');
       tx.objectStore('questions').delete(id);
     } catch {
-      const list = this.getLocalStorage('questions', initialPscQuestionBank);
+      const list = this.getLocalStorage('questions', []);
       this.setLocalStorage('questions', list.filter((q: Question) => q.id !== id));
     }
+  }
+
+  async clearAllQuestions(): Promise<void> {
+    try {
+      const db = await this.initDB();
+      const tx = db.transaction('questions', 'readwrite');
+      tx.objectStore('questions').clear();
+    } catch {
+      this.setLocalStorage('questions', []);
+    }
+    this.setLocalStorage('questions', []);
   }
 
   // --- Profile Methods ---

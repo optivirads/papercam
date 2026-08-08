@@ -207,6 +207,11 @@ app.post('/api/questions', (req, res) => {
   res.json({ success: true, question: saved });
 });
 
+app.delete('/api/questions/all', (req, res) => {
+  db.clearAllQuestions();
+  res.json({ success: true, message: 'All questions cleared.' });
+});
+
 app.delete('/api/questions/:id', (req, res) => {
   db.deleteQuestion(req.params.id);
   res.json({ success: true, id: req.params.id });

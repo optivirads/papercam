@@ -61,6 +61,15 @@ export const apiService = {
     await dbService.deleteQuestion(id);
   },
 
+  async clearAllQuestions(): Promise<void> {
+    try {
+      await fetch(`${API_BASE_URL}/questions/all`, { method: 'DELETE' });
+    } catch (e) {
+      // Offline fallback
+    }
+    await dbService.clearAllQuestions();
+  },
+
   // Student Profile API
   async getProfile(): Promise<StudentProfileForm | null> {
     return await dbService.getProfile();
