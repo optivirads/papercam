@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 
 import { apiService } from '../../services/api';
+import { getExpandedQuestionBank } from '../../services/pscQuestionBank';
 
 interface ExamRunnerScreenProps {
   questionCount: number;
@@ -51,7 +52,7 @@ export const ExamRunnerScreen: React.FC<ExamRunnerScreenProps> = ({
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, 'A' | 'B' | 'C' | 'D'>>({});
-  const [secondsLeft, setSecondsLeft] = useState<number>(questionCount * 60);
+  const [secondsLeft, setSecondsLeft] = useState<number>(questionCount * 45);
   const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
   const [showReviewList, setShowReviewList] = useState<boolean>(false);
 
@@ -59,9 +60,23 @@ export const ExamRunnerScreen: React.FC<ExamRunnerScreenProps> = ({
 
   useEffect(() => {
     async function loadQuestions() {
-      const allQ = await apiService.getQuestions();
-      const selected = [...allQ].sort(() => 0.5 - Math.random()).slice(0, questionCount);
-      setQuestions(selected.length > 0 ? selected : allQ);
+      const targetCount = questionCount > 0 ? questionCount : 20;
+      setSecondsLeft(targetCount * 45);
+
+      try {
+        const allQ = await apiService.getQuestions(targetCount);
+        if (allQ && allQ.length >= targetCount) {
+          const selected = [...allQ].sort(() => 0.5 - Math.random()).slice(0, targetCount);
+          setQuestions(selected);
+          return;
+        }
+      } catch {
+        // Fallback
+      }
+
+      // Guaranteed fallback: generate exactly targetCount questions
+      const expanded = getExpandedQuestionBank(targetCount);
+      setQuestions(expanded);
     }
     loadQuestions();
   }, [questionCount]);

@@ -185,9 +185,9 @@ app.post('/api/auth/verify-email-otp', (req, res) => {
   res.json({ success: true, role, token: `e-jwt-${Date.now()}`, email: normalizedEmail, message: 'Email OTP verified.' });
 });
 
-// ─── Question Bank ─────────────────────────────────────────────────────────────
 app.get('/api/questions', (req, res) => {
-  const questions = db.getQuestions();
+  const count = parseInt(req.query.count || '0', 10);
+  const questions = db.getQuestions(count);
   res.json({ success: true, questions });
 });
 

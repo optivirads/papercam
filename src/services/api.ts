@@ -7,9 +7,10 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
 
 export const apiService = {
   // Questions API
-  async getQuestions(): Promise<Question[]> {
+  async getQuestions(count?: number): Promise<Question[]> {
     try {
-      const res = await fetch(`${API_BASE_URL}/questions`);
+      const url = count ? `${API_BASE_URL}/questions?count=${count}` : `${API_BASE_URL}/questions`;
+      const res = await fetch(url);
       if (res.ok) {
         const data = await res.json();
         if (data.success && Array.isArray(data.questions) && data.questions.length > 0) {
@@ -19,7 +20,7 @@ export const apiService = {
     } catch (e) {
       // Cloud API offline -> Fallback to local IndexedDB
     }
-    return await dbService.getQuestions();
+    return await dbService.getQuestions(count);
   },
 
   async saveQuestion(question: Question): Promise<void> {

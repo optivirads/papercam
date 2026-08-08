@@ -311,5 +311,155 @@ export const initialPscQuestionBank: Question[] = [
       'Convert km/hr to m/s: Multiply by 5/18.',
       'Convert m/s to km/hr: Multiply by 18/5.'
     ]
+  },
+  {
+    id: 16,
+    text: 'Who is popularly known as the "Kerala Gandhi"?',
+    textMl: '"കേരള ഗാന്ധി" എന്നറിയപ്പെടുന്ന സ്വാതന്ത്ര്യസമര സേനാനി ആരാണ്?',
+    optionA: 'K. Kelappan',
+    optionAMl: 'കെ. കേളപ്പൻ',
+    optionB: 'C. Sankaran Nair',
+    optionBMl: 'സി. ശങ്കരൻ നായർ',
+    optionC: 'P. Krishna Pillai',
+    optionCMl: 'പി. കൃഷ്ണപിള്ള',
+    optionD: 'K. P. Kesava Menon',
+    optionDMl: 'കെ. പി. കേശവമേനോൻ',
+    correctOption: 'A',
+    explanation: 'K. Kelappan was a founding member of Nair Service Society and leader of Salt Satyagraha in Kozhikode and Guruvayur Satyagraha.',
+    explanationMl: 'ഉപ്പുസത്യാഗ്രഹവും വൈക്കം, ഗുരുവായൂർ സത്യാഗ്രഹങ്ങളും നയിച്ച കെ. കേളപ്പനാണ് കേരള ഗാന്ധി എന്നറിയപ്പെടുന്നത്.'
+  },
+  {
+    id: 17,
+    text: 'Which Article of the Indian Constitution guarantees Equality before Law?',
+    textMl: 'നിയമത്തിന് മുന്നിലെ സമത്വം ഉറപ്പുനൽകുന്ന ഭരണഘടനാ അനുച്ഛേദം ഏതാണ്?',
+    optionA: 'Article 14',
+    optionAMl: 'അനുച്ഛേദം 14',
+    optionB: 'Article 19',
+    optionBMl: 'അനുച്ഛേദം 19',
+    optionC: 'Article 21',
+    optionCMl: 'അനുച്ഛേദം 21',
+    optionD: 'Article 32',
+    optionDMl: 'അനുച്ഛേദം 32',
+    correctOption: 'A',
+    explanation: 'Article 14 states that the State shall not deny to any person equality before the law or the equal protection of the laws within the territory of India.',
+    explanationMl: 'അനുച്ഛേദം 14 സമത്വത്തിനുള്ള അവകാശം ഉറപ്പുനൽകുന്നു.'
+  },
+  {
+    id: 18,
+    text: 'Which is the longest lake in India and largest lake in Kerala?',
+    textMl: 'ഇന്ത്യയിലെ ഏറ്റവും നീളം കൂടിയ തടാകവും കേരളത്തിലെ ഏറ്റവും വലിയ തടാകവും ഏതാണ്?',
+    optionA: 'Ashtamudi Lake',
+    optionAMl: 'അഷ്ടമുടി തടാകം',
+    optionB: 'Vembanad Lake',
+    optionBMl: 'വേമ്പനാട്ടു കായൽ',
+    optionC: 'Sasthamcotta Lake',
+    optionCMl: 'ശാസ്ത്രംകോട്ട കായൽ',
+    optionD: 'Veli Lake',
+    optionDMl: 'വേളി കായൽ',
+    correctOption: 'B',
+    explanation: 'Vembanad Lake spans across Alappuzha, Kottayam, and Ernakulam districts and covers an area of 2033 sq km.',
+    explanationMl: 'കേരളത്തിലെ ഏറ്റവും വലിയ കായലും ഇന്ത്യയിലെ ഏറ്റവും നീളം കൂടിയ തടാകവുമാണ് വേമ്പനാട്ടു കായൽ.'
+  },
+  {
+    id: 19,
+    text: 'Find the average of the first five prime numbers (2, 3, 5, 7, 11):',
+    textMl: 'ആദ്യത്തെ അഞ്ച് അഭാജ്യ സംഖ്യകളുടെ (Prime Numbers) ശരാശരി എത്ര?',
+    optionA: '5.0',
+    optionAMl: '5.0',
+    optionB: '5.6',
+    optionBMl: '5.6',
+    optionC: '6.0',
+    optionCMl: '6.0',
+    optionD: '5.4',
+    optionDMl: '5.4',
+    correctOption: 'B',
+    explanation: 'First 5 prime numbers are 2, 3, 5, 7, 11. Sum = 2+3+5+7+11 = 28. Average = 28 / 5 = 5.6.',
+    explanationMl: 'ആദ്യ അഞ്ച് അഭാജ്യ സംഖ്യകളുടെ തുക = 28. ശരാശരി = 28 / 5 = 5.6.'
+  },
+  {
+    id: 20,
+    text: 'Which gas is commonly known as "Laughing Gas"?',
+    textMl: '"ചിരിപ്പിക്കുന്ന വാതകം" (Laughing Gas) എന്നറിയപ്പെടുന്ന രാസവസ്തു ഏതാണ്?',
+    optionA: 'Nitrous Oxide (N2O)',
+    optionAMl: 'നൈട്രസ് ഓക്സൈഡ്',
+    optionB: 'Carbon Monoxide',
+    optionBMl: 'കാർബൺ മോണോക്സൈഡ്',
+    optionC: 'Sulfur Dioxide',
+    optionCMl: 'സൾഫർ ഡയോക്സൈഡ്',
+    optionD: 'Methane',
+    optionDMl: 'മീഥെയ്ൻ',
+    correctOption: 'A',
+    explanation: 'Nitrous Oxide (N2O) is used as an anesthetic and analgesic gas, commonly known as laughing gas.',
+    explanationMl: 'നൈട്രസ് ഓക്സൈഡ് ആണ് ചിരിപ്പിക്കുന്ന വാതകം എന്നറിയപ്പെടുന്നത്.'
   }
 ];
+
+/**
+ * Generates an expanded question bank guaranteeing at least requestedCount questions.
+ */
+export function getExpandedQuestionBank(requestedCount: number = 20): Question[] {
+  const pool = [...initialPscQuestionBank];
+
+  if (pool.length >= requestedCount) {
+    return pool.slice(0, requestedCount);
+  }
+
+  // Generate procedural dynamic PSC questions to reach requestedCount
+  let nextId = pool.length + 1;
+
+  const topics = [
+    { cat: 'Kerala History', title: 'Malabar Rebellion', year: '1921', detail: 'Variyamkunnath Kunjahammed Haji' },
+    { cat: 'Indian Polity', title: 'Article 324', detail: 'Superintendence, direction and control of elections vested in Election Commission' },
+    { cat: 'Geography', title: 'Silent Valley National Park', detail: 'Located in Palakkad district, famous for Lion-tailed macaque' },
+    { cat: 'Malayalam Grammar', title: 'Lopa Sandhi', detail: 'Deletes one vowel sound during word combination' },
+    { cat: 'Science', title: 'Mitochondria', detail: 'Known as the Powerhouse of the Cell' },
+    { cat: 'Arithmetic', title: 'Speed Conversion', detail: 'Multiply km/h by 5/18 to get speed in m/s' }
+  ];
+
+  while (pool.length < requestedCount) {
+    const idx = pool.length;
+    const t = topics[idx % topics.length];
+    const p1 = (idx + 1) * 1500;
+    const rate = 5 + (idx % 5);
+    const yrs = 2 + (idx % 3);
+    const si = (p1 * rate * yrs) / 100;
+
+    if (idx % 2 === 0) {
+      pool.push({
+        id: nextId++,
+        text: `[Q${pool.length + 1}] What is the Simple Interest on a principal of ₹${p1} at ${rate}% per annum for ${yrs} years?`,
+        textMl: `[ചോദ്യം ${pool.length + 1}] ₹${p1} ന് പ്രതിവർഷം ${rate}% നിരക്കിൽ ${yrs} വർഷത്തേക്ക് ലഭിക്കുന്ന സാധാരണ പലിശ എത്ര?`,
+        optionA: `₹${si}`,
+        optionAMl: `₹${si}`,
+        optionB: `₹${si + 100}`,
+        optionBMl: `₹${si + 100}`,
+        optionC: `₹${si - 50}`,
+        optionCMl: `₹${si - 50}`,
+        optionD: `₹${si + 250}`,
+        optionDMl: `₹${si + 250}`,
+        correctOption: 'A',
+        explanation: `Simple Interest Formula: SI = (P × R × N) / 100 = (${p1} × ${rate} × ${yrs}) / 100 = ₹${si}.`,
+        explanationMl: `സാധാരണ പലിശ = (P × R × N) / 100 = ₹${si}.`
+      });
+    } else {
+      pool.push({
+        id: nextId++,
+        text: `[Q${pool.length + 1}] Which subject/topic is directly associated with "${t.title}" in the Kerala PSC ${t.cat} syllabus?`,
+        textMl: `[ചോദ്യം ${pool.length + 1}] കേരള പബ്ലിക് സർവീസ് കമ്മീഷൻ പാഠ്യപദ്ധതിയിലെ "${t.title}" ഏതുമായി ബന്ധപ്പെട്ടിരിക്കുന്നു?`,
+        optionA: t.detail,
+        optionAMl: t.detail,
+        optionB: 'Fundamental Rights Article 12 to 35',
+        optionBMl: 'അടിസ്ഥാന അവകാശങ്ങൾ 12 മുതൽ 35 വരെ',
+        optionC: 'First Five Year Plan (1951-1956)',
+        optionCMl: 'ഒന്നാം പഞ്ചവത്സര പദ്ധതി (1951-1956)',
+        optionD: 'Kerala State Formation (Nov 1, 1956)',
+        optionDMl: 'കേരള സംസ്ഥാന രൂപീകരണം (നവംബർ 1, 1956)',
+        correctOption: 'A',
+        explanation: `${t.title} is a core high-yield topic in ${t.cat}: ${t.detail}.`,
+        explanationMl: `${t.cat} വിഭാഗത്തിലെ പ്രധാന ചോദ്യമാണിത്: ${t.detail}.`
+      });
+    }
+  }
+
+  return pool.slice(0, requestedCount);
+}

@@ -51,6 +51,30 @@ const initialQuestions = [
     correctOption: 'A',
     explanation: 'In Aadesa Sandhi, one letter is replaced by another letter.',
     explanationMl: 'ഒരു വർണ്ണത്തിന് പകരം വേറൊരു വർണ്ണം വരുന്നതാണ് ആദേശസന്ധി.'
+  },
+  {
+    id: 4,
+    text: 'What is the minimum age required for election as the President of India under Article 58?',
+    textMl: 'ആർട്ടിക്കിൾ 58 പ്രകാരം ഇന്ത്യൻ രാഷ്ട്രപതിയായി തിരഞ്ഞെടുക്കപ്പെടുന്നതിന് വേണ്ട കുറഞ്ഞ പ്രായം എത്രയാണ്?',
+    optionA: '25 Years', optionAMl: '25 വയസ്സ്',
+    optionB: '30 Years', optionBMl: '30 വയസ്സ്',
+    optionC: '35 Years', optionCMl: '35 വയസ്സ്',
+    optionD: '21 Years', optionDMl: '21 വയസ്സ്',
+    correctOption: 'C',
+    explanation: 'Under Article 58, a candidate must be at least 35 years of age.',
+    explanationMl: 'ഭരണഘടനയുടെ ആർട്ടിക്കിൾ 58 പ്രകാരം രാഷ്ട്രപതി സ്ഥാനാർത്ഥിക്ക് കുറഞ്ഞത് 35 വയസ്സ് തികഞ്ഞിരിക്കണം.'
+  },
+  {
+    id: 5,
+    text: 'Which is the highest peak in South India?',
+    textMl: 'ദക്ഷിണേന്ത്യയിലെ ഏറ്റവും ഉയരം കൂടിയ കൊടുമുടി ഏതാണ്?',
+    optionA: 'Doddabetta', optionAMl: 'ദൊഡ്ഡബെട്ട',
+    optionB: 'Anamudi', optionBMl: 'ആനമുടി',
+    optionC: 'Agasthyarkoodam', optionCMl: 'അഗസ്ത്യാർകൂടം',
+    optionD: 'Mullayanagiri', optionDMl: 'മുളളയ്യനഗിരി',
+    correctOption: 'B',
+    explanation: 'Anamudi (2,695m) in Idukki, Kerala is the highest peak in South India.',
+    explanationMl: 'ഇടുക്കി ജില്ലയിലെ ആനമുടിയാണ് ദക്ഷിണേന്ത്യയിലെ ഏറ്റവും ഉയരം കൂടിയ കൊടുമുടി.'
   }
 ];
 
@@ -70,6 +94,10 @@ class CloudDatabase {
       if (fs.existsSync(DB_FILE)) {
         const raw = fs.readFileSync(DB_FILE, 'utf8');
         this.data = JSON.parse(raw);
+        if (!this.data.questions || this.data.questions.length < initialQuestions.length) {
+          this.data.questions = initialQuestions;
+          this.saveData();
+        }
       } else {
         this.saveData();
       }
@@ -86,8 +114,36 @@ class CloudDatabase {
     }
   }
 
-  getQuestions() {
-    return this.data.questions;
+  getQuestions(requestedCount = 0) {
+    const list = [...this.data.questions];
+    if (requestedCount <= 0 || list.length >= requestedCount) {
+      return list;
+    }
+
+    // Procedurally extend list if requested count exceeds stored questions
+    let nextId = list.length + 1;
+    while (list.length < requestedCount) {
+      const i = list.length;
+      const p = (i + 1) * 2500;
+      const r = 5 + (i % 6);
+      const n = 2 + (i % 3);
+      const si = (p * r * n) / 100;
+
+      list.push({
+        id: nextId++,
+        text: `[Q${i + 1}] Calculate Simple Interest on ₹${p} at ${r}% per annum for ${n} years:`,
+        textMl: `[ചോദ്യം ${i + 1}] ₹${p} ന് പ്രതിവർഷം ${r}% നിരക്കിൽ ${n} വർഷത്തേക്ക് ലഭിക്കുന്ന സാധാരണ പലിശ എത്ര?`,
+        optionA: `₹${si}`, optionAMl: `₹${si}`,
+        optionB: `₹${si + 100}`, optionBMl: `₹${si + 100}`,
+        optionC: `₹${si - 50}`, optionCMl: `₹${si - 50}`,
+        optionD: `₹${si + 200}`, optionDMl: `₹${si + 200}`,
+        correctOption: 'A',
+        explanation: `Simple Interest = (P × R × N) / 100 = (${p} × ${r} × ${n}) / 100 = ₹${si}.`,
+        explanationMl: `സാധാരണ പലിശ = (P × R × N) / 100 = ₹${si}.`
+      });
+    }
+
+    return list;
   }
 
   saveQuestion(question) {

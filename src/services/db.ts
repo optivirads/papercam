@@ -1,4 +1,4 @@
-import { initialPscQuestionBank } from './pscQuestionBank';
+import { initialPscQuestionBank, getExpandedQuestionBank } from './pscQuestionBank';
 import type { Question } from '../components/student/ExamRunnerScreen';
 import type { StudentProfileForm } from '../types';
 import type { AdminStudentRecord } from '../components/admin/AdminStudentRecordsScreen';
@@ -83,18 +83,31 @@ class IndexedDbManager {
   }
 
   // --- Questions Methods ---
-  async getQuestions(): Promise<Question[]> {
+  async getQuestions(requestedCount?: number): Promise<Question[]> {
     try {
       const db = await this.initDB();
-      return new Promise((resolve) => {
+      const stored = await new Promise<Question[]>((resolve) => {
         const tx = db.transaction('questions', 'readonly');
         const store = tx.objectStore('questions');
         const req = store.getAll();
         req.onsuccess = () => resolve(req.result || initialPscQuestionBank);
         req.onerror = () => resolve(this.getLocalStorage('questions', initialPscQuestionBank));
       });
+
+      if (requestedCount && requestedCount > 0) {
+        if (stored.length >= requestedCount) {
+          return stored.slice(0, requestedCount);
+        }
+        return getExpandedQuestionBank(requestedCount);
+      }
+
+      return stored.length > 0 ? stored : getExpandedQuestionBank(20);
     } catch {
-      return this.getLocalStorage('questions', initialPscQuestionBank);
+      const stored = this.getLocalStorage('questions', initialPscQuestionBank);
+      if (requestedCount && requestedCount > 0) {
+        return getExpandedQuestionBank(requestedCount);
+      }
+      return stored;
     }
   }
 
