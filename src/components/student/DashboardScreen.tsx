@@ -50,7 +50,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   ];
 
   return (
-    <div className="flex flex-col min-h-[calc(100vh-65px)] pb-28 px-5 pt-4 space-y-6 max-w-lg mx-auto relative bg-dot-pattern text-slate-100">
+    <div className="flex flex-col min-h-[calc(100vh-65px)] pb-28 px-2 sm:px-5 pt-4 space-y-6 max-w-full mx-auto relative bg-dot-pattern text-slate-100">
       
       {/* Welcome Greeting */}
       <div>

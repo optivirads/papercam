@@ -414,14 +414,14 @@ export const ExamRunnerScreen: React.FC<ExamRunnerScreenProps> = ({
   const optionD = examLanguage === 'ml' && currentQuestion.optionDMl ? currentQuestion.optionDMl : currentQuestion.optionD;
 
   return (
-    <div className="flex flex-col min-h-[calc(100vh-65px)] pb-24 px-5 pt-4 space-y-4 max-w-lg mx-auto animate-fade-in text-slate-100">
+    <div className="flex flex-col min-h-[calc(100vh-65px)] pb-24 px-2 sm:px-5 pt-4 space-y-4 max-w-full mx-auto animate-fade-in text-slate-100">
       
       <div className="flex items-center justify-between bg-[#141c2e] border border-slate-800 rounded-2xl p-3.5 shadow-md">
         <div>
           <span className="text-[10px] font-bold text-[#ffc000] uppercase">
             Question {currentIndex + 1} of {questions.length}
           </span>
-          <h2 className="text-xs font-bold text-white truncate max-w-[150px]">
+          <h2 className="text-xs sm:text-sm font-bold text-white truncate max-w-xs sm:max-w-md">
             {testTitle}
           </h2>
         </div>

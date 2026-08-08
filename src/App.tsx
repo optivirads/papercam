@@ -100,39 +100,105 @@ export function App() {
 
   return (
     <div className="w-full min-h-screen bg-[#0b0f19] flex justify-center selection:bg-[#ffc000] selection:text-[#0d1322]">
-      {/* Mobile Device Frame Container */}
-      <div className="w-full max-w-[430px] min-h-screen bg-[#0d1322] flex flex-col shadow-2xl relative border-x border-slate-800/60">
+      {/* Main Responsive Application Shell */}
+      <div className="w-full max-w-7xl min-h-screen bg-[#0d1322] flex flex-col md:flex-row shadow-2xl relative border-x border-slate-800/60">
         
-        {/* Top Sticky Header */}
-        <Header
-          onOpenDrawer={() => setIsDrawerOpen(true)}
-          onOpenNotifications={() => {
-            setActiveTab('notifications');
-            setCurrentCourseId(null);
-            setCurrentTopicId(null);
-          }}
-          notificationCount={3}
-        />
+        {/* Desktop Permanent Left Navigation Sidebar */}
+        <aside className="hidden md:flex flex-col w-64 border-r border-slate-800/80 bg-[#101726] shrink-0 p-5 space-y-6 sticky top-0 h-screen overflow-y-auto z-20">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#ffc000] to-amber-500 flex items-center justify-center font-extrabold text-[#0d1322] shadow-lg text-lg">
+              P
+            </div>
+            <div>
+              <h1 className="font-extrabold text-white tracking-wider text-lg">PSC MASTER</h1>
+              <p className="text-[10px] text-amber-400 font-semibold tracking-wide uppercase">Kerala Exam Portal</p>
+            </div>
+          </div>
 
-        {/* Android PWA Install Banner */}
-        <PwaInstallBanner />
+          <div className="space-y-1 pt-2">
+            <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-3 mb-2">Student Hub</div>
+            {[
+              { id: 'dashboard', label: 'Dashboard' },
+              { id: 'courses', label: 'Course Catalog' },
+              { id: 'learning', label: 'My Learning' },
+              { id: 'tests', label: 'Mock Tests & PYQ' },
+              { id: 'syllabus', label: 'Official Syllabus' },
+              { id: 'performance_rank', label: 'Statewide Rank' },
+              { id: 'downloads', label: 'Offline Library' },
+              { id: 'notifications', label: 'Notifications' },
+              { id: 'profile', label: 'Profile Settings' },
+            ].map((item) => (
+              <button
+                key={item.id}
+                onClick={() => handleTabNavigation(item.id as NavTab)}
+                className={`w-full flex items-center px-3.5 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer ${
+                  activeTab === item.id
+                    ? 'bg-[#ffc000] text-[#0d1322] shadow-md scale-[1.02]'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
 
+          {userRole === 'admin' && (
+            <div className="space-y-1 pt-4 border-t border-slate-800/80">
+              <div className="text-[10px] font-bold text-amber-400 uppercase tracking-widest px-3 mb-2">Admin CMS Panel</div>
+              {[
+                { id: 'admin_analytics', label: 'Analytics Overview' },
+                { id: 'admin_qbank', label: 'Question Bank' },
+                { id: 'admin_courses', label: 'Curriculum Editor' },
+                { id: 'admin_students', label: 'Student Records' },
+              ].map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => handleTabNavigation(item.id as NavTab)}
+                  className={`w-full flex items-center px-3.5 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer ${
+                    activeTab === item.id
+                      ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+                  }`}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </aside>
 
-        {/* Side Navigation Drawer */}
-        <SideDrawer
-          isOpen={isDrawerOpen}
-          onClose={() => setIsDrawerOpen(false)}
-          activeTab={activeTab}
-          onSelectTab={handleTabNavigation}
-          onLogout={handleLogout}
-          userRole={userRole}
-          studentName={studentProfile?.fullName || 'K. S. Madhavan'}
-          studentRole={userRole === 'admin' ? 'Kerala PSC Admin' : 'PSC Aspirant'}
-          avatarUrl={studentProfile?.profilePicUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'}
-        />
+        {/* Center Main Workspace */}
+        <div className="flex-1 flex flex-col min-w-0">
+          
+          {/* Top Sticky Header */}
+          <Header
+            onOpenDrawer={() => setIsDrawerOpen(true)}
+            onOpenNotifications={() => {
+              setActiveTab('notifications');
+              setCurrentCourseId(null);
+              setCurrentTopicId(null);
+            }}
+            notificationCount={3}
+          />
 
-        {/* Main Content Body Router */}
-        <main className="flex-1 pt-[65px]">
+          {/* Android PWA Install Banner */}
+          <PwaInstallBanner />
+
+          {/* Side Navigation Drawer for Mobile */}
+          <SideDrawer
+            isOpen={isDrawerOpen}
+            onClose={() => setIsDrawerOpen(false)}
+            activeTab={activeTab}
+            onSelectTab={handleTabNavigation}
+            onLogout={handleLogout}
+            userRole={userRole}
+            studentName={studentProfile?.fullName || 'K. S. Madhavan'}
+            studentRole={userRole === 'admin' ? 'Kerala PSC Admin' : 'PSC Aspirant'}
+            avatarUrl={studentProfile?.profilePicUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'}
+          />
+
+          {/* Main Content Body Router */}
+          <main className="flex-1 pt-[65px] px-4 md:px-8">
           
           {/* EXAM RUNNER SCREEN */}
           {activeExamQuestionCount !== null ? (
@@ -298,7 +364,7 @@ export function App() {
             </div>
           )}
         </main>
-
+        </div>
       </div>
     </div>
   );
