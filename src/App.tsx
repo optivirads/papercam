@@ -265,6 +265,13 @@ function AppShell({ studentProfile, setStudentProfile, userRole, onLogout }: {
 
           <main className="flex-1 pt-[56px] px-4 md:px-8">
             <Routes>
+              <Route index element={
+                <DashboardScreen
+                  studentName={studentDisplayName}
+                  activeTab={activeTab}
+                  onNavigateTab={handleTabNavigation}
+                />
+              } />
               <Route path="dashboard" element={
                 <DashboardScreen
                   studentName={studentDisplayName}
