@@ -36,7 +36,7 @@ export interface AdminQuestion {
   sourcePdf?: string;
 }
 
-];
+const initialQuestions: AdminQuestion[] = [];
 
 export const AdminQuestionBankScreen: React.FC = () => {
   const [questions, setQuestions] = useState<AdminQuestion[]>(initialQuestions);
