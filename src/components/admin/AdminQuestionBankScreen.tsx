@@ -337,7 +337,7 @@ export const AdminQuestionBankScreen: React.FC = () => {
 
         <button
           onClick={async () => {
-            const countStr = prompt('Enter number of live internet questions to fetch dynamically (e.g. 10, 20, 50):', '20');
+            const countStr = prompt('Enter number of live Kerala PSC questions to fetch dynamically (e.g. 10, 20, 50, 100):', '20');
             if (!countStr) return;
             const count = parseInt(countStr, 10) || 20;
             const fetched = await apiService.fetchQuestionsFromInternet(count);
@@ -353,17 +353,17 @@ export const AdminQuestionBankScreen: React.FC = () => {
               correctOption: q.correctOption,
               explanation: q.explanation,
               status: 'verified',
-              topicTag: 'Internet Live Quiz',
+              topicTag: 'Kerala PSC Question',
               examLevelTag: 'All Levels',
               difficulty: 'Medium'
             }));
             setQuestions(mapped);
-            alert(`Fetched ${fetched.length} live questions from the Internet API & saved to DB!`);
+            alert(`Fetched ${fetched.length} live Kerala PSC syllabus questions & saved to DB!`);
           }}
           className="py-3 px-3 rounded-xl bg-blue-500 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 hover:brightness-110 active:scale-[0.98] transition-all cursor-pointer shadow-lg shadow-blue-500/20 col-span-2"
         >
           <Globe className="w-4 h-4 text-white" />
-          <span>Fetch Dynamic Internet Questions</span>
+          <span>Fetch Dynamic Kerala PSC Questions</span>
         </button>
       </div>
 

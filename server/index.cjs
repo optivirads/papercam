@@ -191,45 +191,13 @@ app.get('/api/questions', (req, res) => {
   res.json({ success: true, questions });
 });
 
-// Dynamic Internet Question Fetcher Endpoint
+// Dynamic Kerala PSC Question Fetcher Endpoint
 app.get('/api/questions/fetch-internet', async (req, res) => {
-  const amount = Math.min(Math.max(parseInt(req.query.amount || '20', 10), 5), 50);
-  try {
-    const apiRes = await fetch(`https://opentdb.com/api.php?amount=${amount}&type=multiple`);
-    if (apiRes.ok) {
-      const data = await apiRes.json();
-      if (data.results && Array.isArray(data.results)) {
-        const fetched = data.results.map((item, idx) => {
-          const decode = (s) => s.replace(/&quot;/g, '"').replace(/&#039;/g, "'").replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
-          const text = decode(item.question);
-          const correctAnswer = decode(item.correct_answer);
-          const incorrect = item.incorrect_answers.map(decode);
-          const options = [correctAnswer, ...incorrect].sort(() => 0.5 - Math.random());
-          const correctIdx = options.indexOf(correctAnswer);
-          const optionKeys = ['A', 'B', 'C', 'D'];
-
-          const q = {
-            id: Date.now() + idx + Math.floor(Math.random() * 10000),
-            text: text,
-            textMl: `[ഇന്റർനെറ്റ് ക്വിസ് - ${decode(item.category || 'General')}] ${text}`,
-            optionA: options[0] || '',
-            optionB: options[1] || '',
-            optionC: options[2] || '',
-            optionD: options[3] || '',
-            correctOption: optionKeys[correctIdx] || 'A',
-            explanation: `Correct Answer: ${correctAnswer}. Category: ${item.category}`,
-            explanationMl: `ശരിയായ ഉത്തരം: ${correctAnswer}`
-          };
-          db.saveQuestion(q);
-          return q;
-        });
-        return res.json({ success: true, count: fetched.length, questions: fetched });
-      }
-    }
-  } catch (err) {
-    console.error('Backend internet fetch error:', err.message);
-  }
-  res.json({ success: false, error: 'Could not fetch questions from internet.' });
+  const amount = Math.min(Math.max(parseInt(req.query.amount || '20', 10), 5), 100);
+  const questions = db.getQuestions(amount);
+  
+  // Return exclusively Kerala PSC questions
+  res.json({ success: true, count: questions.length, questions });
 });
 
 app.post('/api/questions', (req, res) => {
