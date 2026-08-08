@@ -265,7 +265,7 @@ function AppShell({ studentProfile, setStudentProfile, userRole, onLogout }: {
 
           <main className="flex-1 pt-[56px] px-4 md:px-8">
             <Routes>
-              <Route path="/dashboard" element={
+              <Route path="dashboard" element={
                 <DashboardScreen
                   studentName={studentDisplayName}
                   activeTab={activeTab}
@@ -273,46 +273,46 @@ function AppShell({ studentProfile, setStudentProfile, userRole, onLogout }: {
                 />
               } />
 
-              <Route path="/courses" element={
+              <Route path="courses" element={
                 <CoursesScreen
                   onSelectTopicWorkspace={(cId, tId) => navigate(`/courses/${cId}/${tId}`)}
                   onNavigateTab={handleTabNavigation}
                 />
               } />
 
-              <Route path="/courses/:courseId/:topicId" element={
+              <Route path="courses/:courseId/:topicId" element={
                 <TopicWorkspaceRoute
                   onStartExam={(count) => navigate(`/test/run?count=${count}`)}
                   onBack={() => navigate('/courses')}
                 />
               } />
 
-              <Route path="/learning" element={
+              <Route path="learning" element={
                 <MyLearningScreen
                   onNavigateTab={handleTabNavigation}
                   onOpenTopicWorkspace={(cId, tId) => navigate(`/courses/${cId}/${tId}`)}
                 />
               } />
 
-              <Route path="/tests" element={
+              <Route path="tests" element={
                 <MockTestsScreen
                   onStartFullMockExam={(_title, count) => navigate(`/test/run?count=${count}`)}
                   onNavigateTab={handleTabNavigation}
                 />
               } />
 
-              <Route path="/test/run" element={
+              <Route path="test/run" element={
                 <ExamRunnerRoute onExit={() => navigate('/tests')} />
               } />
 
-              <Route path="/syllabus" element={
+              <Route path="syllabus" element={
                 <SyllabusScreen
                   onNavigateTab={handleTabNavigation}
                   onStartExamOnTopic={() => navigate('/test/run?count=10')}
                 />
               } />
 
-              <Route path="/performance" element={
+              <Route path="performance" element={
                 <PerformanceRankScreen
                   onNavigateTab={handleTabNavigation}
                   onViewAnalysis={() => navigate('/test/run?count=20')}
@@ -320,15 +320,15 @@ function AppShell({ studentProfile, setStudentProfile, userRole, onLogout }: {
                 />
               } />
 
-              <Route path="/downloads" element={
+              <Route path="downloads" element={
                 <DownloadsScreen onNavigateTab={handleTabNavigation} />
               } />
 
-              <Route path="/notifications" element={
+              <Route path="notifications" element={
                 <NotificationsScreen onNavigateTab={handleTabNavigation} />
               } />
 
-              <Route path="/profile" element={
+              <Route path="profile" element={
                 <ProfileScreen
                   studentProfile={studentProfile}
                   onUpdateProfile={async (profile) => {
@@ -340,21 +340,21 @@ function AppShell({ studentProfile, setStudentProfile, userRole, onLogout }: {
                 />
               } />
 
-              <Route path="/admin/analytics" element={
+              <Route path="admin/analytics" element={
                 <RequireAdmin><AdminAnalyticsScreen /></RequireAdmin>
               } />
-              <Route path="/admin/questions" element={
+              <Route path="admin/questions" element={
                 <RequireAdmin><AdminQuestionBankScreen /></RequireAdmin>
               } />
-              <Route path="/admin/courses" element={
+              <Route path="admin/courses" element={
                 <RequireAdmin><AdminCourseManagerScreen /></RequireAdmin>
               } />
-              <Route path="/admin/students" element={
+              <Route path="admin/students" element={
                 <RequireAdmin><AdminStudentRecordsScreen /></RequireAdmin>
               } />
 
               {/* Catch-all inside shell */}
-              <Route path="*" element={<Navigate to="/dashboard" replace />} />
+              <Route path="*" element={<Navigate to="dashboard" replace />} />
             </Routes>
           </main>
         </div>
@@ -394,8 +394,10 @@ export function App() {
     );
   }
 
-  const handleLoginSuccess = (session: { role: UserRole; phone?: string }) => {
+  const handleLoginSuccess = async (session: { role: UserRole; phone?: string }) => {
     setUserRole(session.role);
+    const profile = await apiService.getProfile();
+    setStudentProfile(profile);
   };
 
   const handleLogout = () => {
@@ -439,8 +441,8 @@ function AppRouter({
       <Route path="/" element={<LandingPage />} />
       <Route path="/auth" element={
         <AuthScreen
-          onLoginSuccess={(session) => {
-            onLoginSuccess({ role: session.role, phone: session.phone });
+          onLoginSuccess={async (session) => {
+            await onLoginSuccess({ role: session.role, phone: session.phone });
             // Use React Router navigate — no full page reload
             navigate(session.role === 'admin' ? '/admin/analytics' : '/dashboard', { replace: true });
           }}
