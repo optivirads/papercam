@@ -17,6 +17,8 @@ import {
 import type { NavTab } from '../../types';
 import { BottomNav } from '../common/BottomNav';
 
+import { apiService } from '../../services/api';
+
 interface DashboardScreenProps {
   studentName?: string;
   onNavigateTab: (tab: NavTab) => void;
@@ -37,6 +39,23 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
     { sender: 'Mentor Madhavan', text: 'Welcome everyone! Today we will focus on Aadesa & Lopama sandhi.' }
   ]);
   const [newChatText, setNewChatText] = useState('');
+
+  const [realTestsCount, setRealTestsCount] = useState<number>(0);
+  const [realAccuracy, setRealAccuracy] = useState<number>(0);
+
+  useEffect(() => {
+    async function loadStats() {
+      const results = await apiService.getExamResults();
+      if (results && results.length > 0) {
+        setRealTestsCount(results.length);
+        const avgAcc = Math.round(
+          results.reduce((sum, r) => sum + (r.percentage || 0), 0) / results.length
+        );
+        setRealAccuracy(avgAcc);
+      }
+    }
+    loadStats();
+  }, []);
 
   const downloadedMaterials = [
     { id: 'pdf1', title: 'Indian Constitution - Preamble & Articles.pdf', size: '2.4 MB', subject: 'Polity' },
@@ -76,7 +95,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
           <div className="w-7 h-7 rounded-lg bg-amber-500/10 text-[#ffc000] flex items-center justify-center mx-auto mb-1.5">
             <Target className="w-4 h-4" />
           </div>
-          <div className="text-base font-extrabold text-white">84%</div>
+          <div className="text-base font-extrabold text-white">{realAccuracy > 0 ? `${realAccuracy}%` : '84%'}</div>
           <div className="text-[10px] font-semibold text-slate-400 mt-0.5">Accuracy</div>
         </div>
 
@@ -84,7 +103,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
           <div className="w-7 h-7 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center mx-auto mb-1.5">
             <FileCheck className="w-4 h-4" />
           </div>
-          <div className="text-base font-extrabold text-white">18</div>
+          <div className="text-base font-extrabold text-white">{realTestsCount > 0 ? realTestsCount : 18}</div>
           <div className="text-[10px] font-semibold text-slate-400 mt-0.5">Tests Taken</div>
         </div>
       </div>

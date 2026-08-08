@@ -29,7 +29,7 @@ export const TopicWorkspaceScreen: React.FC<TopicWorkspaceScreenProps> = ({
   const [selectedQuestionCount, setSelectedQuestionCount] = useState<number>(10);
   const [pdfPage, setPdfPage] = useState<number>(1);
 
-  const questionCountOptions = [10, 20, 30, 50];
+  const questionCountOptions = [10, 20, 30, 50, 100];
 
   return (
     <div className="flex flex-col min-h-[calc(100vh-65px)] pb-24 px-5 pt-4 space-y-5 max-w-lg mx-auto animate-fade-in text-slate-100">

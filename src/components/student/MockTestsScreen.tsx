@@ -279,7 +279,7 @@ export const MockTestsScreen: React.FC<MockTestsScreenProps> = ({
             )}
 
             <button
-              onClick={() => onStartExamOrRetake(exam)}
+              onClick={() => onStartFullMockExam(exam.title, exam.totalQuestions)}
               className={`w-full mt-4 py-3 px-4 rounded-xl font-extrabold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md ${
                 exam.isAttempted
                   ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'
